@@ -71,6 +71,7 @@ This project implements an Agentic AI workflow to identify and analyze companies
     ├── analyst.py      # Steps 3, 4, 5: Qualitative Brain
     ├── forensic.py     # Step 6: Earnings Quality
     └── reporter.py     # Step 7: Scoring & HTML Publisher
+```
 
 ## ⚖️ License
 **© 2026 All Rights Reserved.**
