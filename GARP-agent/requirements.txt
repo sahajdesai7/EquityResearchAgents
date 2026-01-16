@@ -1,8 +1,8 @@
 # --- Math & Financial Data ---
-numpy           # The foundation for your hard math calculations
-pandas          # For handling dataframes (growth logic, spreadsheet exports)
-scipy           # For advanced stats (Standard Deviation bands)
-yfinance        # The bridge to market data (prices, financials)
+numpy                            # The foundation for your hard math calculations
+pandas                           # For handling dataframes (growth logic, spreadsheet exports)
+scipy                            # For advanced stats (Standard Deviation bands)
+yfinance                         # The bridge to market data (prices, financials)
 
 # --- Visualization & Reporting ---
 plotly          # For creating interactive, dual-axis charts
@@ -12,3 +12,7 @@ jinja2          # For generating the final HTML Investment Memo
 agno            # The agentic framework (formerly Phidata) to structure your tools
 openai          # Client to talk to OpenRouter (gpt-oss-120b)
 python-dotenv   # To securely load your API keys
+duckduckgo-search # News feed
+ddgs            # News feed
+gnews           # News feed
+groq            # To use the LLMs on GROQ portal
