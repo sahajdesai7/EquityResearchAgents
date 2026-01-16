@@ -60,6 +60,7 @@ This project implements an Agentic AI workflow to identify and analyze companies
 * **Security**: API keys managed via `.env`.
 
 ## 📂 Project Structure
+```text
 /GARP-agent
 ├── main.py             # The Conductor (runs the workflow)
 ├── .env                # Secret keys (ignored by Git)
