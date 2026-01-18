@@ -1,0 +1,66 @@
+FORENSIC EARNINGS REPORT FOR NVIDIA Corporation (NVDA)
+Date: 2026-01-18 10:09:34
+============================================================
+
+[TRAILING 12 MONTHS (TTM)]
+       Period         Type  RONW (%)  Debt/Equity  Int. Coverage     Net Income            EBIT     Total Debt
+TTM (Last 4Q) Trailing 12M     83.43         0.09         471.72 99,198,000,000 116,516,000,000 10,481,000,000
+
+[ANNUAL FINANCIAL TRENDS]
+    Period   Type  RONW (%)  Debt/Equity  Int. Coverage     Net Income           EBIT     Total Debt
+2025-01-31 Annual     91.87         0.13         341.19 72,880,000,000 84,273,000,000 10,270,000,000
+2024-01-31 Annual     69.24         0.26         132.59 29,760,000,000 34,075,000,000 11,056,000,000
+2023-01-31 Annual     19.76         0.54          16.96  4,368,000,000  4,443,000,000 12,031,000,000
+
+[QUARTERLY FINANCIAL TRENDS]
+    Period    Type  RONW (%)  Debt/Equity  Int. Coverage     Net Income           EBIT     Total Debt
+2025-10-31 Quarter     26.84         0.09         622.90 31,910,000,000 37,997,000,000 10,481,000,000
+2025-07-31 Quarter     26.39         0.11         504.32 26,422,000,000 31,268,000,000 10,598,000,000
+2025-04-30 Quarter     22.39         0.12         348.78 18,775,000,000 21,973,000,000 10,285,000,000
+2025-01-31 Quarter     27.85         0.13         414.39 22,091,000,000 25,278,000,000 10,270,000,000
+2024-10-31 Quarter     29.30         0.16         366.84 19,309,000,000 22,377,000,000 10,225,000,000
+
+------------------------------
+
+**Analysis**
+
+### Current Health: TTM Figures
+The TTM (Current) figures show a healthy earnings quality:
+
+*   RONW (%) = 83.43%
+*   Debt/Equity = 0.09
+*   Int. Coverage = 471.72
+*   Net Income = $99,198,000,000
+*   EBIT = $116,516,000,000
+*   Total Debt = $10,481,000,000
+
+These figures indicate a robust earnings growth rate and stable debt levels.
+
+### Trend Analysis: TTM vs Previous Years
+Comparing the TTM figures with previous years shows an improving trend:
+
+| Period     | Type   |   RONW (%) |   Debt/Equity |   Int. Coverage | Net Income     | EBIT           | Total Debt     |
+|:-----------|:-------|-----------:|--------------:|----------------:|:---------------|:---------------|:---------------|
+| 2025-01-31 | Annual |      91.87 |          0.13 |          341.19 | 72,880,000,000 | 84,273,000,000 | 10,270,000,000 |
+| 2024-01-31 | Annual |      69.24 |          0.26 |          132.59 | 29,760,000,000 | 34,075,000,000 | 11,056,000,000 |
+| 2023-01-31 | Annual |      19.76 |          0.54 |           16.96 | 4,368,000,000  | 4,443,000,000  | 12,031,000,000 |
+
+The RONW percentage has increased significantly over the past three years, indicating a strong earnings growth rate.
+
+### Quality Check: Scan Search Results for EACH Year
+Analyzing the search results:
+
+*   **2026**: No notable issues or one-time gains/losses.
+*   **2025**: The Alpha Spread report highlights NVIDIA's strengths in AI and gaming, but no specific concerns about earnings quality.
+*   **2024**: The Wikipedia article provides a brief overview of NVIDIA's history, while the Financial Reports link shows record revenue growth.
+
+### Verdict: Fundamental Health
+Based on the analysis:
+
+*   The TTM figures indicate healthy earnings quality.
+*   The trend analysis suggests an improving earnings growth rate over the past three years.
+*   No significant one-time gains/losses are detected in the search results for each year.
+*   NVIDIA's fundamental health appears to be strong, with a robust earnings growth rate and stable debt levels.
+
+Overall, NVIDIA's financial health seems solid, driven by its strong earnings growth rate and stable debt levels.
+============================================================

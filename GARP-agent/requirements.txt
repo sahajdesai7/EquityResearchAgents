@@ -16,3 +16,9 @@ duckduckgo-search # News feed
 ddgs            # News feed
 gnews           # News feed
 groq            # To use the LLMs on GROQ portal
+google-genai    # Gemini
+ollama          # Offline LLMs
+
+# --- Miscellaneous ---
+tqdm            # Time and progress bar
+tabulate        # Formatting
