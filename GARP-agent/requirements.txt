@@ -18,6 +18,8 @@ gnews           # News feed
 groq            # To use the LLMs on GROQ portal
 google-genai    # Gemini
 ollama          # Offline LLMs
+lancedb         # VectorDB
+pypdf           # PDF reader
 
 # --- Miscellaneous ---
 tqdm            # Time and progress bar

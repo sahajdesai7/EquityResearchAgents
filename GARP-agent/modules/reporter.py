@@ -32,10 +32,10 @@ class MemoState:
         self.forensic_data = ""
         self.valuation_facts = {}
         self.valuation_table = ""
+        self.full_annexure_table = "" # New: Holds the raw JSON table
         self.scores = {}       # Raw integers from LLM
         self.scoring_data = {} # Computed totals & recommendation (Python)
         self.thesis = ""
-        self.review_notes = ""
         self.final_markdown = ""
 
 # --- HELPER FUNCTIONS ---
@@ -61,7 +61,7 @@ def get_fundamental_json(ticker: str) -> Optional[str]:
     return filepath if os.path.exists(filepath) else None
 
 def build_valuation_facts(ticker: str) -> Dict[str, Any]:
-    """Reads JSON and builds context dictionary + markdown table."""
+    """Reads JSON and builds context dictionary + markdown table for the Agent."""
     json_path = get_fundamental_json(ticker)
     if not json_path: return {"available": False}
 
@@ -72,7 +72,7 @@ def build_valuation_facts(ticker: str) -> Dict[str, Any]:
         df = pd.DataFrame(data)
         latest = df.iloc[-1]
         
-        # Build Table String (Last 4 periods)
+        # Build Table String (Last 4 periods for the prompt context)
         history_df = df.tail(4).copy()
         cols = ["Report_Date_Official", "Close", "PE_Ratio", "PEG_Ratio", "Revenue_TTM", "Net_Margin_Pct", "RONW_Pct"]
         cols = [c for c in cols if c in history_df.columns]
@@ -89,6 +89,24 @@ def build_valuation_facts(ticker: str) -> Dict[str, Any]:
         }
     except Exception as e:
         return {"available": False, "error": str(e)}
+
+def build_full_annexure(ticker: str) -> str:
+    """Reads JSON and converts the ENTIRE content to a Markdown table for the Annexure."""
+    json_path = get_fundamental_json(ticker)
+    if not json_path: return "_Data not available_"
+
+    try:
+        with open(json_path, 'r') as f: data = json.load(f)
+        if not data: return "_Data empty_"
+        
+        df = pd.DataFrame(data)
+        # Sort by date desc for readability in annexure
+        if "Report_Date_Official" in df.columns:
+            df = df.sort_values("Report_Date_Official", ascending=False)
+            
+        return df.to_markdown(index=False)
+    except:
+        return "_Error processing data_"
 
 def compute_final_score(raw_scores: dict) -> dict:
     """Python-side calculation for deterministic scoring."""
@@ -135,13 +153,19 @@ def format_score_card(score_data: dict) -> str:
     md += f"\n**Final Verdict: {score_data['percent']}%** {rec_emoji} **{score_data['recommendation']}**\n\n---\n"
     return md
 
-def save_full_report(ticker, markdown_content, charts_filepath):
-    """Saves the final report as HTML with embedded charts."""
+def save_full_report(ticker, markdown_content, charts_filepath, annexure_markdown):
+    """Saves the final report as HTML with embedded charts AND the raw data annexure."""
+    
+    # 1. Read Charts
     charts_html = "<p><em>Charts not available.</em></p>"
     if charts_filepath and os.path.exists(charts_filepath):
         with open(charts_filepath, "r", encoding="utf-8") as f: charts_html = f.read()
 
+    # 2. Convert Main Report to HTML
     body_html = markdown.markdown(markdown_content, extensions=['tables'])
+    
+    # 3. Convert Annexure to HTML
+    annexure_html = markdown.markdown(annexure_markdown, extensions=['tables'])
     
     full_html = f"""
     <!DOCTYPE html>
@@ -152,15 +176,32 @@ def save_full_report(ticker, markdown_content, charts_filepath):
             body {{ font-family: 'Segoe UI', sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; line-height: 1.6; background: #f9f9f9; color: #333; }}
             .report-container {{ background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }}
             h1, h2 {{ color: #2c3e50; }} h1 {{ border-bottom: 2px solid #eee; }}
-            table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
-            th, td {{ padding: 12px; border: 1px solid #ddd; }} th {{ background: #f2f2f2; }}
+            table {{ width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.9em; }}
+            th, td {{ padding: 10px; border: 1px solid #ddd; text-align: left; }} 
+            th {{ background: #f2f2f2; font-weight: 600; }}
+            tr:nth-child(even) {{ background-color: #fafafa; }}
             .charts-container {{ margin-top: 40px; border-top: 3px solid #3498db; padding-top: 20px; }}
+            .annexure-container {{ margin-top: 50px; border-top: 3px solid #e74c3c; padding-top: 20px; }}
+            .annexure-container h2 {{ color: #c0392b; }}
+            .annexure-table-wrapper {{ overflow-x: auto; }}
         </style>
     </head>
     <body>
         <div class="report-container">
             {body_html}
-            <div class="charts-container"><h2>Financial Visuals</h2>{charts_html}</div>
+            
+            <div class="charts-container">
+                <h2>Financial Visuals</h2>
+                {charts_html}
+            </div>
+            
+            <div class="annexure-container">
+                <h2>Annexure: Raw Fundamental Data</h2>
+                <p><em>Full historical dataset used for analysis.</em></p>
+                <div class="annexure-table-wrapper">
+                    {annexure_html}
+                </div>
+            </div>
         </div>
     </body>
     </html>
@@ -194,18 +235,6 @@ def get_reporter_agent(model_id=MODEL_ID):
         debug_mode=True,
     )
 
-def get_reviewer_agent(model_id=MODEL_ID):
-    return Agent(
-        model=Ollama(id=model_id),
-        description="You are a Senior Risk Officer (The Skeptic).",
-        instructions=[
-            "Your job is to poke holes in the thesis.",
-            "Did the Reporter ignore the 'Valuation Facts'? Are they too optimistic?",
-            "Output a concise 'Risk Review' section highlighting top 3 dangers."
-        ],
-        debug_mode=True,
-    )
-
 # --- WORKFLOW NODES (STEPS) ---
 
 def ingest_node(state: MemoState):
@@ -216,12 +245,16 @@ def ingest_node(state: MemoState):
     state.market_data = get_file_content(analyst_file)
     state.forensic_data = get_file_content(forensic_file)
     
+    # 1. Build Agent Context
     val_data = build_valuation_facts(state.ticker)
     if val_data["available"]:
         state.valuation_facts = val_data
         state.valuation_table = val_data["table_str"]
     else:
         state.valuation_table = "Valuation Data Unavailable."
+        
+    # 2. Build Full Annexure
+    state.full_annexure_table = build_full_annexure(state.ticker)
 
 def scoring_node(state: MemoState, agent):
     """Step 2: Pure quantitative scoring based on facts."""
@@ -277,23 +310,8 @@ def thesis_node(state: MemoState, agent):
     response = agent.run(prompt)
     state.thesis = response.content
 
-def review_node(state: MemoState, agent):
-    """Step 4: Risk Review."""
-    prompt = f"""
-    Review this Draft Thesis for {state.ticker}:
-    
-    {state.thesis}
-    
-    Critique it against these Hard Facts:
-    {state.valuation_table}
-    
-    Output a section titled '## Risk Officer Review'. Be direct and skeptical.
-    """
-    response = agent.run(prompt)
-    state.review_notes = response.content
-
 def assembly_node(state: MemoState):
-    """Step 5: Stitch it together."""
+    """Step 4: Stitch it together."""
     scorecard = format_score_card(state.scoring_data)
     
     snapshot = f"""
@@ -306,7 +324,7 @@ def assembly_node(state: MemoState):
 * **Current PEG:** {state.valuation_facts.get('current_peg', 'N/A')}
     """
     
-    state.final_markdown = f"{snapshot}\n\n{scorecard}\n\n{state.thesis}\n\n{state.review_notes}"
+    state.final_markdown = f"{snapshot}\n\n{scorecard}\n\n{state.thesis}"
 
 # --- MAIN ORCHESTRATOR ---
 
@@ -317,37 +335,33 @@ def generate_investment_memo(ticker):
     # Initialize State & Agents
     state = MemoState(ticker)
     reporter = get_reporter_agent()
-    reviewer = get_reviewer_agent()
+    # Reviewer Agent Removed
     
     # Execution Pipeline
-    with tqdm(total=5, desc="Workflow", unit="step") as pbar:
+    with tqdm(total=4, desc="Workflow", unit="step") as pbar:
         
         # 1. Ingest
-        pbar.set_description("Step 1/5: Ingesting Data")
+        pbar.set_description("Step 1/4: Ingesting Data")
         ingest_node(state)
         pbar.update(1)
         
         # 2. Score
-        pbar.set_description("Step 2/5: Scoring Model")
+        pbar.set_description("Step 2/4: Scoring Model")
         scoring_node(state, reporter)
         pbar.update(1)
         
         # 3. Thesis
-        pbar.set_description("Step 3/5: Drafting Thesis")
+        pbar.set_description("Step 3/4: Drafting Thesis")
         thesis_node(state, reporter)
         pbar.update(1)
         
-        # 4. Review
-        pbar.set_description("Step 4/5: Risk Review")
-        review_node(state, reviewer)
-        pbar.update(1)
-        
-        # 5. Assemble
-        pbar.set_description("Step 5/5: Final Assembly")
+        # 4. Assemble & Save
+        pbar.set_description("Step 4/4: Final Assembly")
         assembly_node(state)
         
         chart_file = get_latest_file(ticker, "charts_")
-        output_path = save_full_report(ticker, state.final_markdown, chart_file)
+        # Pass the annexure table to the save function
+        output_path = save_full_report(ticker, state.final_markdown, chart_file, state.full_annexure_table)
         pbar.update(1)
 
     end_time = time.time()

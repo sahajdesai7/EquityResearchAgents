@@ -327,7 +327,7 @@ def get_historical_ratios(ticker_symbol):
 
 # --- Helper Functions: Search ---
 
-def search_duckduckgo(query: str, max_results=1) -> str:
+def search_duckduckgo(query: str, max_results=5) -> str:
     """Executes the search via Python."""
     try:
         results = DDGS().text(query, max_results=max_results)
@@ -349,12 +349,19 @@ def get_forensic_agent():
         model=Ollama(id=OLLAMA_MODEL_ID), 
         description="You are a strict forensic accountant. You are not a pessimist but a pragmatist.",
         instructions=[
+            # Core Mission
             "Your job is to identify low-quality earnings and deteriorating trends.",
             "Compare the TTM (Current) vs Annual (History) vs Quarterly (Recent Trend).",
-            "Look for 'Exceptional Items' in the search results that might artificially boost reported numbers.",
-            "Use the quantitative data (RONW, Debt/Equity) as the baseline truth.",
+            
+            # --- NEW: PRECISION GUARDRAILS ---
+            "Verify 'Exceptional Items': actively search for non-recurring gains/losses (restructuring, fines, asset sales) that distort the P/E ratio.",
+            "MATERIALITY TEST: Ignore minor operational charges. Only flag items that significantly alter the Net Margin or EPS trajectory.",
+            "Use the quantitative data (RONW, Debt/Equity) as the baseline truth; if search results contradict the hard data, prioritize the data but note the discrepancy.",
+            # ---------------------------------
+            
+            "Output concise observations. Do not summarize; analyze.",
         ],
-        debug_mode = True,
+        debug_mode=True,
         markdown=True,
     )
 
