@@ -1,17 +1,44 @@
 import os
 import glob
-import time  # ✅ Ensure time is imported
+import time
+import json
+import re
 import pandas as pd
-import yfinance as yf
+import markdown 
 from datetime import datetime, timedelta
-from typing import Optional
-from tqdm import tqdm  # ✅ Import TQDM
+from typing import Optional, Dict, Any
+from tqdm import tqdm
 
 # Agno (Phidata) Imports
 from agno.agent import Agent
 from agno.models.ollama import Ollama 
 
-# --- Helper Functions ---
+MODEL_ID = "llama3.2:3b"
+
+# --- SCORING CONFIGURATION ---
+SCORING_WEIGHTS = {
+    "News": 3,
+    "Moat": 2,
+    "Management": 2,
+    "Earnings Quality": 3
+}
+
+# --- STATE MANAGEMENT ---
+
+class MemoState:
+    def __init__(self, ticker):
+        self.ticker = ticker
+        self.market_data = ""
+        self.forensic_data = ""
+        self.valuation_facts = {}
+        self.valuation_table = ""
+        self.scores = {}       # Raw integers from LLM
+        self.scoring_data = {} # Computed totals & recommendation (Python)
+        self.thesis = ""
+        self.review_notes = ""
+        self.final_markdown = ""
+
+# --- HELPER FUNCTIONS ---
 
 def get_latest_file(ticker: str, prefix: str) -> Optional[str]:
     """Finds the most recent file in 'outputs/'."""
@@ -19,213 +46,314 @@ def get_latest_file(ticker: str, prefix: str) -> Optional[str]:
     outputs_dir = os.path.join(base_dir, "outputs")
     search_pattern = os.path.join(outputs_dir, f"{prefix}*{ticker}*")
     files = glob.glob(search_pattern)
-    
-    if not files:
-        return None
-    return max(files, key=os.path.getmtime)
+    return max(files, key=os.path.getmtime) if files else None
 
 def get_file_content(filepath: str) -> str:
     """Safely reads text content."""
-    if not filepath or not os.path.exists(filepath):
-        return "Data not available."
-    with open(filepath, "r", encoding="utf-8") as f:
-        return f.read()
+    if not filepath or not os.path.exists(filepath): return "Data not available."
+    with open(filepath, "r", encoding="utf-8") as f: return f.read()
 
-def get_historical_peg(ticker_symbol):
-    """Calculates historical P/E and PEG ratios for the last 3 years."""
+def get_fundamental_json(ticker: str) -> Optional[str]:
+    """Finds the fundamentals_{ticker}.json file."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    outputs_dir = os.path.join(base_dir, "outputs")
+    filepath = os.path.join(outputs_dir, f"fundamentals_{ticker}.json")
+    return filepath if os.path.exists(filepath) else None
+
+def build_valuation_facts(ticker: str) -> Dict[str, Any]:
+    """Reads JSON and builds context dictionary + markdown table."""
+    json_path = get_fundamental_json(ticker)
+    if not json_path: return {"available": False}
+
     try:
-        ticker = yf.Ticker(ticker_symbol)
-        financials = ticker.financials
-        if 'Diluted EPS' not in financials.index:
-            return pd.DataFrame() 
-            
-        eps_series = financials.loc['Diluted EPS'].T.sort_index()
-        if len(eps_series) < 4:
-            return pd.DataFrame() 
-            
-        eps_history = eps_series.tail(4)
-        data = []
+        with open(json_path, 'r') as f: data = json.load(f)
+        if not data: return {"available": False}
+
+        df = pd.DataFrame(data)
+        latest = df.iloc[-1]
         
-        for i in range(1, len(eps_history)):
-            date_t = eps_history.index[i]
-            eps_t = eps_history.iloc[i]
-            eps_prev = eps_history.iloc[i-1]
-            
-            # A. Growth Rate
-            if eps_prev == 0:
-                growth_rate = 0
-            else:
-                growth_rate = (eps_t / eps_prev) - 1
-            growth_rate_pct = growth_rate * 100
-            
-            # B. Price (Approximate at Fiscal Year End)
-            start_date = date_t
-            end_date = date_t + timedelta(days=5)
-            hist = ticker.history(start=start_date, end=end_date)
-            price_t = hist['Close'].iloc[0] if not hist.empty else 0
-                
-            # C. Ratios
-            pe_ratio = price_t / eps_t if eps_t > 0 else 0
-            peg_ratio = pe_ratio / growth_rate_pct if (growth_rate_pct > 0 and pe_ratio > 0) else 0
-            
-            data.append({
-                "Date": date_t.strftime('%Y-%m-%d'),
-                "Price": round(price_t, 2),
-                "PE Ratio": round(pe_ratio, 2),
-                "PEG Ratio": round(peg_ratio, 2)
-            })
-            
-        return pd.DataFrame(data)
+        # Build Table String (Last 4 periods)
+        history_df = df.tail(4).copy()
+        cols = ["Report_Date_Official", "Close", "PE_Ratio", "PEG_Ratio", "Revenue_TTM", "Net_Margin_Pct", "RONW_Pct"]
+        cols = [c for c in cols if c in history_df.columns]
+        
+        # Format for readability
+        table_str = history_df[cols].to_markdown(index=False)
+
+        return {
+            "available": True,
+            "table_str": table_str,
+            "current_pe": latest.get("PE_Ratio"),
+            "current_peg": latest.get("PEG_Ratio"),
+            "price": latest.get("Close")
+        }
     except Exception as e:
-        print(f"⚠️ Error calculating PEG: {e}")
-        return pd.DataFrame()
+        return {"available": False, "error": str(e)}
 
-# --- Agent Definitions ---
+def compute_final_score(raw_scores: dict) -> dict:
+    """Python-side calculation for deterministic scoring."""
+    weighted = {k: raw_scores.get(k, 0) * SCORING_WEIGHTS[k] for k in SCORING_WEIGHTS}
+    total = sum(weighted.values())
+    max_score = 10 * sum(SCORING_WEIGHTS.values())
+    pct = round((total / max_score) * 100, 1)
 
-def get_reporter_agent(model_id="llama3.2:3b"):
+    if pct >= 70: rec = "Bullish"
+    elif pct >= 50: rec = "Neutral"
+    else: rec = "Bearish"
+
+    return {
+        "raw_scores": raw_scores, 
+        "weighted_scores": weighted, 
+        "total_score": total, 
+        "percent": pct, 
+        "recommendation": rec
+    }
+
+def extract_json_scores(text: str) -> dict:
+    """Robust JSON extraction from LLM markdown response."""
+    try:
+        match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
+        if match: return json.loads(match.group(1))
+        
+        # Fallback
+        match = re.search(r"(\{.*\"News\".*\})", text, re.DOTALL)
+        if match: return json.loads(match.group(1))
+    except: pass
+    return {}
+
+def format_score_card(score_data: dict) -> str:
+    """Generates a Markdown Scorecard table."""
+    if not score_data: return ""
+    rec_emoji = "🐂" if score_data['recommendation'] == "Bullish" else "🐻" if score_data['recommendation'] == "Bearish" else "⚖️"
+    
+    md = f"### 🎯 AI Investment Scorecard\n| Category | Weight | Score (0-10) | Weighted |\n| :--- | :---: | :---: | :---: |\n"
+    for k, weight in SCORING_WEIGHTS.items():
+        raw = score_data['raw_scores'].get(k, 0)
+        w = score_data['weighted_scores'].get(k, 0)
+        md += f"| **{k}** | {weight}x | {raw} | {w} |\n"
+    md += f"| **TOTAL** | | | **{score_data['total_score']} / {sum(SCORING_WEIGHTS.values())*10}** |\n"
+    md += f"\n**Final Verdict: {score_data['percent']}%** {rec_emoji} **{score_data['recommendation']}**\n\n---\n"
+    return md
+
+def save_full_report(ticker, markdown_content, charts_filepath):
+    """Saves the final report as HTML with embedded charts."""
+    charts_html = "<p><em>Charts not available.</em></p>"
+    if charts_filepath and os.path.exists(charts_filepath):
+        with open(charts_filepath, "r", encoding="utf-8") as f: charts_html = f.read()
+
+    body_html = markdown.markdown(markdown_content, extensions=['tables'])
+    
+    full_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Investment Memo: {ticker}</title>
+        <style>
+            body {{ font-family: 'Segoe UI', sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; line-height: 1.6; background: #f9f9f9; color: #333; }}
+            .report-container {{ background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }}
+            h1, h2 {{ color: #2c3e50; }} h1 {{ border-bottom: 2px solid #eee; }}
+            table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+            th, td {{ padding: 12px; border: 1px solid #ddd; }} th {{ background: #f2f2f2; }}
+            .charts-container {{ margin-top: 40px; border-top: 3px solid #3498db; padding-top: 20px; }}
+        </style>
+    </head>
+    <body>
+        <div class="report-container">
+            {body_html}
+            <div class="charts-container"><h2>Financial Visuals</h2>{charts_html}</div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    output_path = os.path.join(base_dir, "outputs", f"Investment_Memo_{ticker}.html")
+    with open(output_path, "w", encoding="utf-8") as f: f.write(full_html)
+    return output_path
+
+# --- AGENT DEFINITIONS ---
+
+def get_reporter_agent(model_id=MODEL_ID):
     return Agent(
         model=Ollama(id=model_id),
-        description="You are a Pragmatic Portfolio Manager.",
+        description="You are a Pragmatic Portfolio Manager (GARP Focused).",
         instructions=[
-            "Your goal is to write a balanced Investment Memo.",
-            "Focus on 'Growth at a Reasonable Price' (GARP).",
+            "Your goal is to write a balanced Investment Memo focusing on 'Growth at a Reasonable Price'.",
             "CRITICAL: Do not write a separate 'Risks' section. Interweave risks directly into your thesis.",
-            "Example: 'While the PE expansion to 30x suggests optimism, this relies entirely on the new product launch; any delay would likely revert the multiple to 20x.'",
-            "Assign scores (0-10) for: News (x3), Moat (x2), Management (x2), Earnings Quality (x3).",
+            
+            # --- FUSED GROWTH THINKING ---
+            "Since we are targetting growth at a reasonable premium, the focus should be whether the PE ratio plotted in the charts has room to grow the PE, given the current price, earnings, sentiment, market position and management.",
+            "PE can grow in only two ways:",
+            "  1) Growth in earnings with positive change in current stock price.",
+            "  2) Market sentiment leads to rerating of stock to a higher PE.",
+            "The reverse is also true (PE contraction) and you must flag the risk of a reversal too.",
+            "While doing so, be balanced: neither a pessimist nor an optimist, but a pragmatist and realist."
+            
+            "Output formatting: Use clear Markdown. Integers for scores."
         ],
-        debug_mode = True,
-        markdown=True
+        debug_mode=True,
     )
 
-def get_reviewer_agent(model_id="llama3.2:3b"):
+def get_reviewer_agent(model_id=MODEL_ID):
     return Agent(
         model=Ollama(id=model_id),
         description="You are a Senior Risk Officer (The Skeptic).",
         instructions=[
-            "Review the Draft Memo provided by the Reporter.",
-            "Check 1: Is the tone too optimistic? (We want Realism, not Hype).",
-            "Check 2: Did they ignore the PEG 'Caution' flag?",
-            "Check 3: Are the risks interwoven? If they dumped risks at the end, flag it.",
-            "Output a critique summarizing what needs to be fixed. Do not rewrite the full memo yet.",
+            "Your job is to poke holes in the thesis.",
+            "Did the Reporter ignore the 'Valuation Facts'? Are they too optimistic?",
+            "Output a concise 'Risk Review' section highlighting top 3 dangers."
         ],
-        debug_mode = True,
-        markdown=True
+        debug_mode=True,
     )
 
-# --- Main Workflow ---
+# --- WORKFLOW NODES (STEPS) ---
+
+def ingest_node(state: MemoState):
+    """Step 1: Gather all files and data."""
+    analyst_file = get_latest_file(state.ticker, "research_")
+    forensic_file = get_latest_file(state.ticker, "forensic_")
+    
+    state.market_data = get_file_content(analyst_file)
+    state.forensic_data = get_file_content(forensic_file)
+    
+    val_data = build_valuation_facts(state.ticker)
+    if val_data["available"]:
+        state.valuation_facts = val_data
+        state.valuation_table = val_data["table_str"]
+    else:
+        state.valuation_table = "Valuation Data Unavailable."
+
+def scoring_node(state: MemoState, agent):
+    """Step 2: Pure quantitative scoring based on facts."""
+    prompt = f"""
+    Evaluate {state.ticker} based on these inputs.
+    
+    [MARKET DATA]: {state.market_data[:2000]}
+    [FORENSIC DATA]: {state.forensic_data}
+    [VALUATION TABLE]:\n{state.valuation_table}
+    
+    Task: Assign scores (0-10) for these categories.
+    Output ONLY a valid JSON object. No markdown, no text.
+    {{
+        "News": <int>,
+        "Moat": <int>,
+        "Management": <int>,
+        "Earnings Quality": <int>
+    }}
+    """
+    response = agent.run(prompt)
+    state.scores = extract_json_scores(response.content)
+    
+    # Compute totals immediately
+    if state.scores:
+        state.scoring_data = compute_final_score(state.scores)
+    else:
+        # Default safety
+        state.scoring_data = {"recommendation": "Hold", "total_score": 0, "percent": 0, "raw_scores": {}, "weighted_scores": {}}
+
+def thesis_node(state: MemoState, agent):
+    """Step 3: Write the narrative thesis."""
+    # We pass the computed recommendation so the tone matches the score
+    rec = state.scoring_data.get("recommendation", "Neutral")
+    
+    prompt = f"""
+    Write the Core Thesis for {state.ticker}.
+    
+    [CONTEXT]
+    The Quantitative Score is: {state.scoring_data.get('total_score')} ({rec}).
+    
+    [VALUATION FACTS - SOURCE OF TRUTH]
+    {state.valuation_table}
+    
+    [RESEARCH INPUTS]
+    {state.market_data[:3000]}
+    
+    Task:
+    1. Write a 'Core Thesis' section. Focus on: Is the PE expansion sustainable given the data?
+    2. Write a 'Forensic Financial Summary'. Use exact numbers from the Valuation Facts table.
+    3. Write 'What Must Go Right / What Breaks'.
+    4. INTERWEAVE risks. Use the Growth Thinking framework (PE expansion vs Contraction).
+    """
+    response = agent.run(prompt)
+    state.thesis = response.content
+
+def review_node(state: MemoState, agent):
+    """Step 4: Risk Review."""
+    prompt = f"""
+    Review this Draft Thesis for {state.ticker}:
+    
+    {state.thesis}
+    
+    Critique it against these Hard Facts:
+    {state.valuation_table}
+    
+    Output a section titled '## Risk Officer Review'. Be direct and skeptical.
+    """
+    response = agent.run(prompt)
+    state.review_notes = response.content
+
+def assembly_node(state: MemoState):
+    """Step 5: Stitch it together."""
+    scorecard = format_score_card(state.scoring_data)
+    
+    snapshot = f"""
+# Investment Memo: {state.ticker}
+    
+## Investment Snapshot
+* **Recommendation:** {state.scoring_data.get('recommendation')}
+* **Score:** {state.scoring_data.get('percent')}%
+* **Current P/E:** {state.valuation_facts.get('current_pe', 'N/A')}
+* **Current PEG:** {state.valuation_facts.get('current_peg', 'N/A')}
+    """
+    
+    state.final_markdown = f"{snapshot}\n\n{scorecard}\n\n{state.thesis}\n\n{state.review_notes}"
+
+# --- MAIN ORCHESTRATOR ---
 
 def generate_investment_memo(ticker):
     print(f"\n🏆 Reporter Agent: Assembling Investment Memo for {ticker}...")
-    
-    # ✅ Start Timer
     start_time = time.time()
     
-    # We have 5 distinct steps in our manual progress bar
-    with tqdm(total=5, desc="Initializing", unit="step") as pbar:
+    # Initialize State & Agents
+    state = MemoState(ticker)
+    reporter = get_reporter_agent()
+    reviewer = get_reviewer_agent()
+    
+    # Execution Pipeline
+    with tqdm(total=5, desc="Workflow", unit="step") as pbar:
         
-        # --- PHASE 1: Intelligence Gathering ---
-        pbar.set_description("Step 1/5: Gathering Intelligence")
+        # 1. Ingest
+        pbar.set_description("Step 1/5: Ingesting Data")
+        ingest_node(state)
+        pbar.update(1)
         
-        analyst_file = get_latest_file(ticker, "research_")
-        forensic_file = get_latest_file(ticker, "forensic_")
+        # 2. Score
+        pbar.set_description("Step 2/5: Scoring Model")
+        scoring_node(state, reporter)
+        pbar.update(1)
+        
+        # 3. Thesis
+        pbar.set_description("Step 3/5: Drafting Thesis")
+        thesis_node(state, reporter)
+        pbar.update(1)
+        
+        # 4. Review
+        pbar.set_description("Step 4/5: Risk Review")
+        review_node(state, reviewer)
+        pbar.update(1)
+        
+        # 5. Assemble
+        pbar.set_description("Step 5/5: Final Assembly")
+        assembly_node(state)
+        
         chart_file = get_latest_file(ticker, "charts_")
-        
-        analyst_data = get_file_content(analyst_file)
-        forensic_data = get_file_content(forensic_file)
-        
-        # Calculate PEG
-        peg_df = get_historical_peg(ticker)
-        peg_context = "PEG Data Unavailable"
-        caution_flag = "None"
-        
-        if not peg_df.empty:
-            current_peg = peg_df['PEG Ratio'].iloc[-1]
-            hist_avg_peg = peg_df['PEG Ratio'].mean()
-            peg_context = peg_df.to_markdown(index=False)
-            
-            if current_peg < 1.5:
-                if current_peg > (hist_avg_peg * 1.2):
-                    caution_flag = f"⚠️ CAUTION: PEG ({current_peg}) is attractive (<1.5) but rising steeply vs history ({hist_avg_peg:.2f}). Window closing."
-                else:
-                    caution_flag = "✅ GREEN: Valuation is attractive and stable."
-            else:
-                caution_flag = f"❌ RED: PEG ({current_peg}) exceeds GARP limit of 1.5."
-        
-        pbar.update(1) # Done with Prep
+        output_path = save_full_report(ticker, state.final_markdown, chart_file)
+        pbar.update(1)
 
-        # --- PHASE 2: The Draft (Reporter) ---
-        pbar.set_description("Step 2/5: Drafting Thesis")
-        
-        reporter = get_reporter_agent()
-        draft_prompt = f"""
-        Write a Draft Investment Memo for {ticker}.
-        
-        === INPUTS ===
-        [Market Research]:
-        {analyst_data[:2000]}... (truncated for brevity)
-        
-        [Forensic Analysis]:
-        {forensic_data}
-        
-        [Valuation Context (PEG History)]:
-        {peg_context}
-        
-        [Valuation Flag]: {caution_flag}
-        ==============
-        
-        Task:
-        1. Score the opportunity (News, Moat, Mgmt, Quality).
-        2. Write the thesis. Focus on: Is the PE expansion sustainable?
-        3. INTERWEAVE the risks. If you say "Growth is good", immediately add "But X could derail it."
-        """
-        draft_response = reporter.run(draft_prompt)
-        draft_text = draft_response.content
-        
-        pbar.update(1) # Done with Drafting
-
-        # --- PHASE 3: The Critique (Reviewer) ---
-        pbar.set_description("Step 3/5: Risk Officer Review")
-        
-        reviewer = get_reviewer_agent()
-        critique_response = reviewer.run(f"Review this draft:\n\n{draft_text}\n\nDid they respect the Caution Flag: {caution_flag}?")
-        critique_text = critique_response.content
-        
-        pbar.update(1) # Done with Review
-
-        # --- PHASE 4: The Final Polish (Reporter) ---
-        pbar.set_description("Step 4/5: Finalizing Memo")
-        
-        final_prompt = f"""
-        Refine the Investment Memo based on this critique:
-        "{critique_text}"
-        
-        Ensure the final output is formatted as clean HTML/Markdown.
-        Include a link to the charts: {chart_file}
-        """
-        final_response = reporter.run(final_prompt)
-        
-        pbar.update(1) # Done with Final Polish
-        
-        # --- PHASE 5: Save Output ---
-        pbar.set_description("Step 5/5: Saving File")
-        
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        output_path = os.path.join(base_dir, "outputs", f"Investment_Memo_{ticker}.md")
-        
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write(final_response.content)
-            
-        pbar.update(1) # Done!
-        pbar.set_description("✅ Complete")
-
-    # ✅ Stop Timer & Print Duration
     end_time = time.time()
-    elapsed_time = end_time - start_time
-    formatted_time = str(timedelta(seconds=int(elapsed_time)))
-    
+    formatted_time = str(timedelta(seconds=int(end_time - start_time)))
     print(f"\n⏱️ Total Execution Time: {formatted_time}")
-    print(f"✅ Memo Saved: {output_path}")
-    
+    print(f"✅ Investment Memo Saved: {output_path}")
     return output_path
 
 if __name__ == "__main__":

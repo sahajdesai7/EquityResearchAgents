@@ -22,3 +22,4 @@ ollama          # Offline LLMs
 # --- Miscellaneous ---
 tqdm            # Time and progress bar
 tabulate        # Formatting
+markdown        # Formatting

@@ -1,9 +1,11 @@
 import os
 import time
+import json
 from datetime import datetime
 from dotenv import load_dotenv
 import yfinance as yf
 import pandas as pd
+import numpy as np
 
 # Agno (Phidata) Imports
 from agno.agent import Agent
@@ -57,16 +59,20 @@ def process_financials(financials, balance_sheet, period_name="Annual"):
     
     data = []
     for date, row in recent_history.iterrows():
-        # --- A. RONW ---
+        # --- A. Revenue & Income ---
+        revenue = row.get('Total Revenue', row.get('Revenue', 0))
         net_income = row.get('Net Income', 0)
+        
+        # --- B. Balance Sheet Items ---
         equity = row.get('Stockholders Equity', row.get('Total Stockholder Equity', 1))
-        ronw = (net_income / equity) * 100 if equity != 0 else 0
-        
-        # --- B. Solvency ---
         total_debt = row.get('Total Debt', 0)
-        debt_to_equity = total_debt / equity if equity != 0 else 0
         
-        # --- C. Interest Coverage ---
+        # --- C. Ratios ---
+        ronw = (net_income / equity) * 100 if equity != 0 else 0
+        debt_to_equity = total_debt / equity if equity != 0 else 0
+        net_margin = (net_income / revenue) * 100 if revenue != 0 else 0
+        
+        # --- D. Interest Coverage ---
         interest_exp = abs(row.get('Interest Expense', 0))
         # Fallback for EBIT
         ebit = row.get('EBIT', row.get('Pretax Income', 0) + interest_exp)
@@ -79,10 +85,11 @@ def process_financials(financials, balance_sheet, period_name="Annual"):
         data.append({
             "Period": date.strftime('%Y-%m-%d'),
             "Type": period_name,
+            "Revenue": f"{revenue:,.0f}",
+            "Net Margin (%)": round(net_margin, 2),
             "RONW (%)": round(ronw, 2),
             "Debt/Equity": round(debt_to_equity, 2),
             "Int. Coverage": round(int_coverage, 2),
-            # Raw numbers for the Agent to match against news
             "Net Income": f"{net_income:,.0f}",
             "EBIT": f"{ebit:,.0f}",
             "Total Debt": f"{total_debt:,.0f}"
@@ -93,7 +100,7 @@ def process_financials(financials, balance_sheet, period_name="Annual"):
 def calculate_ttm(ticker):
     """
     Calculates Trailing Twelve Months (TTM) data.
-    Logic: Sums flows (Income) over last 4 quarters, takes latest snapshot for Balance Sheet.
+    Logic: Sums flows (Income/Revenue) over last 4 quarters, takes latest snapshot for Balance Sheet.
     """
     q_fin = ticker.quarterly_financials
     q_bs = ticker.quarterly_balance_sheet
@@ -111,6 +118,8 @@ def calculate_ttm(ticker):
 
     # 1. Sum Flows (Last 4 Quarters)
     last_4 = q_fin.iloc[:, :4]
+    
+    revenue_ttm = last_4.loc['Total Revenue'].sum() if 'Total Revenue' in last_4.index else 0
     net_income_ttm = last_4.loc['Net Income'].sum() if 'Net Income' in last_4.index else 0
     
     interest_series = last_4.loc['Interest Expense'] if 'Interest Expense' in last_4.index else pd.Series([0])
@@ -131,20 +140,167 @@ def calculate_ttm(ticker):
     # 3. Calculate Ratios
     ronw = (net_income_ttm / equity) * 100 if equity != 0 else 0
     debt_to_equity = total_debt / equity if equity != 0 else 0
+    net_margin = (net_income_ttm / revenue_ttm) * 100 if revenue_ttm != 0 else 0
     int_coverage = 999.0 if interest_exp_ttm == 0 else ebit_ttm / interest_exp_ttm
 
     data = [{
         "Period": "TTM (Last 4Q)",
         "Type": "Trailing 12M",
+        "Revenue": f"{revenue_ttm:,.0f}",
+        "Net Margin (%)": round(net_margin, 2),
         "RONW (%)": round(ronw, 2),
         "Debt/Equity": round(debt_to_equity, 2),
         "Int. Coverage": round(int_coverage, 2),
-        # Raw numbers for the Agent
         "Net Income": f"{net_income_ttm:,.0f}",
         "EBIT": f"{ebit_ttm:,.0f}",
         "Total Debt": f"{total_debt:,.0f}"
     }]
     return pd.DataFrame(data)
+
+def enrich_json_data(ticker):
+    """
+    Reads the existing fundamentals JSON (created by charts.py) and appends
+    Forensic metrics. Falls back to Annual Data if Quarterly is missing.
+    """
+    print(f"   🧬 Enriching JSON with Forensic Data (TTM + Annual Fallback)...")
+    
+    safe_ticker = ticker.replace(".", "_")
+    filename = f"fundamentals_{ticker}.json"
+    filepath = os.path.join(OUTPUTS_DIR, filename)
+
+    if not os.path.exists(filepath):
+        print("   ⚠️ JSON file not found. Skipping enrichment.")
+        return
+
+    # 1. Load Existing Data
+    with open(filepath, 'r') as f:
+        json_data = json.load(f)
+        
+    # 2. Fetch Full History (Quarterly AND Annual)
+    stock = yf.Ticker(ticker)
+    
+    # Quarterly (Recent detailed view)
+    q_fin = stock.quarterly_financials.T
+    q_bs = stock.quarterly_balance_sheet.T
+    
+    # Annual (Longer history fallback)
+    a_fin = stock.financials.T
+    a_bs = stock.balance_sheet.T
+    
+    # Clean indices
+    for df in [q_fin, q_bs, a_fin, a_bs]:
+        if df.index.tz is not None: df.index = df.index.tz_localize(None)
+
+    # 3. Iterate and Enrich
+    for record in json_data:
+        report_date_str = record.get("Report_Date_Official")
+        if not report_date_str: continue
+        
+        report_date = pd.Timestamp(report_date_str)
+        
+        # Init Variables
+        revenue = None
+        net_income = None
+        equity = None
+        total_debt = None
+        ebit = None
+        interest_exp = None
+        
+        data_source = "None"
+
+        # --- STRATEGY A: Try Quarterly TTM First (Preferred) ---
+        if report_date in q_fin.index and report_date in q_bs.index:
+            try:
+                # Find integer location
+                q_fin_sorted = q_fin.sort_index(ascending=False)
+                loc_sorted = q_fin_sorted.index.get_loc(report_date)
+                
+                # We need 4 quarters (current + 3 past)
+                if loc_sorted + 4 <= len(q_fin_sorted):
+                    revenue = q_fin_sorted['Total Revenue'].iloc[loc_sorted : loc_sorted+4].sum()
+                    net_income = q_fin_sorted['Net Income'].iloc[loc_sorted : loc_sorted+4].sum()
+                    
+                    # Interest & EBIT
+                    int_series = q_fin_sorted.get('Interest Expense', pd.Series(0))
+                    interest_exp = abs(int_series.iloc[loc_sorted : loc_sorted+4].sum())
+
+                    if 'EBIT' in q_fin_sorted.columns:
+                        ebit = q_fin_sorted['EBIT'].iloc[loc_sorted : loc_sorted+4].sum()
+                    elif 'Pretax Income' in q_fin_sorted.columns:
+                        ebit = q_fin_sorted['Pretax Income'].iloc[loc_sorted : loc_sorted+4].sum() + interest_exp
+                    else:
+                        ebit = 0
+                    
+                    # Balance Sheet (Snapshot)
+                    row_bs = q_bs.loc[report_date]
+                    equity = row_bs.get('Stockholders Equity', row_bs.get('Total Stockholder Equity', 1))
+                    total_debt = row_bs.get('Total Debt', 0)
+                    
+                    data_source = "Quarterly_TTM"
+            except Exception:
+                pass
+
+        # --- STRATEGY B: Fallback to Annual (If TTM failed) ---
+        if data_source == "None" and report_date in a_fin.index and report_date in a_bs.index:
+            try:
+                row_fin = a_fin.loc[report_date]
+                row_bs = a_bs.loc[report_date]
+                
+                revenue = row_fin.get('Total Revenue', 0)
+                net_income = row_fin.get('Net Income', 0)
+                
+                interest_exp = abs(row_fin.get('Interest Expense', 0))
+                
+                if 'EBIT' in row_fin:
+                    ebit = row_fin['EBIT']
+                elif 'Pretax Income' in row_fin:
+                    ebit = row_fin['Pretax Income'] + interest_exp
+                else:
+                    ebit = 0
+                    
+                equity = row_bs.get('Stockholders Equity', row_bs.get('Total Stockholder Equity', 1))
+                total_debt = row_bs.get('Total Debt', 0)
+                
+                data_source = "Annual"
+            except Exception:
+                pass
+
+        # --- CALCULATE & SAVE RATIOS ---
+        # Only proceed if we found valid data from either source
+        if revenue is not None and equity is not None:
+            # 1. Net Margin
+            net_margin = (net_income / revenue) * 100 if revenue != 0 else 0
+            
+            # 2. RONW (ROE)
+            ronw = (net_income / equity) * 100 if equity != 0 else 0
+            
+            # 3. Debt/Equity
+            de_ratio = total_debt / equity if equity != 0 else 0
+            
+            # 4. Interest Coverage
+            int_cov = ebit / interest_exp if interest_exp > 0 else 999.0
+
+            # Append to Record
+            record['Data_Source_Type'] = data_source
+            record['Revenue'] = round(revenue, 2)
+            record['Net_Income'] = round(net_income, 2)
+            record['EBIT'] = round(ebit, 2)
+            record['Total_Debt'] = round(total_debt, 2)
+            record['Equity'] = round(equity, 2)
+            
+            record['Net_Margin_Pct'] = round(net_margin, 2)
+            record['RONW_Pct'] = round(ronw, 2)
+            record['Debt_to_Equity'] = round(de_ratio, 2)
+            record['Interest_Coverage'] = round(int_cov, 2)
+            
+        else:
+            # Explicitly mark missing data for clarity
+            record['Data_Source_Type'] = "Missing"
+
+    # 4. Save Updates
+    with open(filepath, 'w') as f:
+        json.dump(json_data, f, indent=4)
+    print(f"   ✅ JSON enriched with Revenue, Debt, EBIT & Ratios (Coverage: {len(json_data)} points).")
 
 def get_historical_ratios(ticker_symbol):
     """Fetches Annual, Quarterly, and TTM history."""
@@ -299,7 +455,9 @@ def analyze_earnings_quality(ticker):
     # 3. Agentic Analysis
     agent = get_forensic_agent()
     
-    with tqdm(total=1, desc="Forensic Scan", unit="step") as pbar:
+    with tqdm(total=2, desc="Forensic Scan", unit="step") as pbar:
+        # Step A: Run the LLM Analysis
+        pbar.set_description("Step 1/2: LLM Analysis")
         report_content = safe_run_agent(
             agent,
             prompt="Analyze the Earnings Quality and Financial Trends.",
@@ -308,6 +466,11 @@ def analyze_earnings_quality(ticker):
             ttm_df=ttm_df,
             metadata=metadata
         )
+        pbar.update(1)
+
+        # Step B: Enrich the JSON data
+        pbar.set_description("Step 2/2: Updating JSON Data")
+        enrich_json_data(ticker)
         pbar.update(1)
 
     # 4. Save to File

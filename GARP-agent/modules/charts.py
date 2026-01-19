@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
+import json
 from datetime import datetime, timedelta
 
 # --- Configuration ---
@@ -23,34 +24,15 @@ def print_debug_view(df, name):
         print("   [Empty Dataframe]")
         return
 
-    current_year = datetime.now().year
-    years = range(current_year - 5, current_year + 1)
-    q_months = [3, 6, 9, 12]
-    
-    target_dates = []
-    for y in years:
-        for m in q_months:
-            if m in [3, 12]: d = 31
-            elif m in [6, 9]: d = 30
-            q_date = datetime(y, m, d)
-            target_dates.append(q_date)
-
-    mask = pd.Series(False, index=df.index)
-    for t_date in target_dates:
-        start_w = t_date - timedelta(days=1)
-        end_w = t_date + timedelta(days=1)
-        mask |= (df.index >= start_w) & (df.index <= end_w)
-
+    # Check for near-quarter-end dates for visibility
+    mask = df.index.is_quarter_end
     debug_df = df[mask]
-    
     if debug_df.empty:
-        print("   [No data found exactly around quarter ends]")
+        print("   [No exact quarter-end dates found in index. Showing tail:]")
+        print(df.tail(5))
     else:
-        print(debug_df.head(15))
-        if len(debug_df) > 15:
-            print(f"   ... and {len(debug_df) - 15} more rows.")
+        print(debug_df.tail(10))
     print("--------------------------------------------------\n")
-
 
 def get_fundamental_data(ticker):
     print(f"\n--- 🛠️ Processing Data for {ticker} ---")
@@ -59,27 +41,25 @@ def get_fundamental_data(ticker):
     # --- Step 2: Daily Closing Prices ---
     print("Step 2: Fetching Price History...")
     df_price = stock.history(period="5y")
-    if df_price.empty: return None
+    if df_price.empty: return None, []
     
     if df_price.index.tz is not None:
         df_price.index = df_price.index.tz_localize(None)
     
     df_price = df_price[['Close']].copy()
-    print_debug_view(df_price, "Step 2: Price Dataframe")
 
     # --- Step 3 & 4: Fetch EPS ---
     print("Step 3 & 4: Fetching EPS Data...")
     annuals = stock.financials.T
-    if annuals.index.tz is not None: annuals.index = annuals.index.tz_localize(None)
-    
     quarters = stock.quarterly_financials.T
+    
+    # Timezone cleanup
+    if annuals.index.tz is not None: annuals.index = annuals.index.tz_localize(None)
     if quarters.index.tz is not None: quarters.index = quarters.index.tz_localize(None)
     
-    # 🔍 PRINT RAW DATA
-    print("\n>>> RAW ANNUALS HEAD:")
-    print(annuals['Diluted EPS'])
-    print("\n>>> RAW QUARTERLY HEAD:")
-    print(quarters['Diluted EPS'])
+    # ✅ COLLECT REPORTING DATES (for JSON export)
+    # We combine annual and quarterly dates, sort them, and remove duplicates
+    reporting_dates = sorted(list(set(annuals.index) | set(quarters.index)))
 
     eps_col = None
     for col in ['Diluted EPS', 'Basic EPS']:
@@ -89,87 +69,160 @@ def get_fundamental_data(ticker):
             
     if not eps_col:
         print(f"⚠️ Could not find EPS column.")
-        return None
+        return None, []
 
-    # --- Step 5: Calculate TTM EPS ---
-    print("\nStep 5: Calculating TTM EPS...")
+    # --- Step 5: Calculate TTM EPS & Growth ---
+    print("\nStep 5: Calculating TTM EPS & Growth Rate...")
     
-    # A. Annuals (Baseline History)
+    # Baseline History
     series_annual_ttm = annuals[eps_col].dropna()
 
-    # B. Quarterlies (Rolling Calculation)
-    # Ensure sorted Oldest -> Newest so rolling works forward in time
+    # Rolling Calculation (4 quarters)
     quarters.sort_index(inplace=True)
+    series_quarterly_ttm = quarters[eps_col].rolling(window=4).sum().dropna()
     
-    # Logic: We need 4 quarters to make 1 TTM point.
-    # If we have N quarters, we get (N - 3) valid TTM points.
-    series_quarterly_ttm = quarters[eps_col].rolling(window=4).sum()
-    print(series_quarterly_ttm)
+    # Combine Data
+    s_combined_eps = pd.concat([series_annual_ttm, series_quarterly_ttm])
+    s_combined_eps = s_combined_eps[~s_combined_eps.index.duplicated(keep='last')].sort_index()
     
-    # Drop the NaNs created by the rolling window (the first 3 rows)
-    series_quarterly_ttm = series_quarterly_ttm.dropna()
-    print(series_annual_ttm)
-    
-    print(f"   -> Calculated {len(series_quarterly_ttm)} valid Quarterly TTM points from {len(quarters)} available quarters.")
+    df_metrics = s_combined_eps.to_frame(name='TTM_EPS')
 
-    # --- Step 6: Combine Unified Table ---
-    s_combined = pd.concat([series_annual_ttm, series_quarterly_ttm])
-    s_combined.sort_index(inplace=True)
-    
-    # Handle overlaps: If an Annual date and Quarterly date match, keep Quarterly (more precise/recent)
-    s_combined = s_combined[~s_combined.index.duplicated(keep='last')]
-    
-    df_eps = s_combined.to_frame(name='TTM_EPS')
-    print_debug_view(df_eps, "Step 6: Combined EPS Dataframe")
-
-    # --- Step 7: Merge and Fill ---
+    # --- Step 7: Merging and Filling ---
     print("Step 7: Merging and Filling...")
+    df_metrics_daily = df_metrics.reindex(df_price.index, method='ffill')
+    df_final = df_price.join(df_metrics_daily)
     
-    # Forward fill logic: TTM EPS stays valid until the next report comes out
-    df_eps_daily = df_eps.reindex(df_price.index, method='ffill')
-    df_final = df_price.join(df_eps_daily)
-    
-    # --- Step 8: Calculate PE ---
-    print("Step 8: Calculating PE Ratio...")
+    # --- Step 8: Calculate PE & PEG ---
+    print("Step 8: Calculating PE & PEG Ratios...")
     df_final['PE_Ratio'] = df_final['Close'] / df_final['TTM_EPS']
     
-    # Clean up artifacts
+    # Calculate EPS Growth YoY after merge and fill
+    df_final['EPS_Growth_YoY'] = (
+        (df_final['TTM_EPS'] / df_final['TTM_EPS'].shift(365) - 1) * 100
+    )
+
+    # PEG calculation
+    df_final['PEG_Ratio'] = df_final['PE_Ratio'] / df_final['EPS_Growth_YoY']
+    
+    # Cleanup
     df_final.replace([np.inf, -np.inf], np.nan, inplace=True)
     df_final.dropna(subset=['PE_Ratio'], inplace=True)
     
-    print_debug_view(df_final, "Step 8: Final Merged Dataframe")
+    print_debug_view(df_final, "Final Dataframe")
     
-    return df_final
+    return df_final, reporting_dates
+
+def export_to_json(df, ticker, reporting_dates):
+    """
+    Exports rows corresponding to the company's specific Quarter/Year End dates.
+    Uses 'asof' logic to find the closest trading day if the report date was a weekend/holiday.
+    """
+    print(f"\n--- 💾 Exporting JSON for {ticker} ---")
+    if not os.path.exists(OUTPUTS_DIR):
+        os.makedirs(OUTPUTS_DIR)
+        
+    export_data = []
+    
+    # Filter dates to those within our available price history range
+    valid_dates = [d for d in reporting_dates if d >= df.index.min() and d <= df.index.max()]
+    
+    for report_date in valid_dates:
+        # Find the index location in df that is closest to (but not after) the report_date
+        # method='pad' / 'ffill' ensures we get the latest close price as of that report date
+        try:
+            loc = df.index.get_indexer([report_date], method='pad')[0]
+            
+            # If valid index found (get_indexer returns -1 if out of bounds)
+            if loc != -1:
+                row_data = df.iloc[loc].to_dict()
+                
+                # Add metadata for clarity
+                row_data['Report_Date_Official'] = report_date.strftime('%Y-%m-%d')
+                row_data['Trading_Date_Used'] = df.index[loc].strftime('%Y-%m-%d')
+                
+                # Convert timestamps in dict to strings for JSON
+                clean_row = {}
+                for k, v in row_data.items():
+                    if isinstance(v, (pd.Timestamp, datetime)):
+                        clean_row[k] = v.strftime('%Y-%m-%d')
+                    elif pd.isna(v):
+                        clean_row[k] = None
+                    else:
+                        clean_row[k] = v
+                        
+                export_data.append(clean_row)
+        except Exception as e:
+            print(f"Warning skipping date {report_date}: {e}")
+
+    filename = f"fundamentals_{ticker}.json"
+    filepath = os.path.join(OUTPUTS_DIR, filename)
+    
+    with open(filepath, 'w') as f:
+        json.dump(export_data, f, indent=4)
+        
+    print(f"✅ Data exported to: {filepath}")
 
 def create_charts(ticker):
-    df = get_fundamental_data(ticker)
+    df, reporting_dates = get_fundamental_data(ticker)
     if df is None or len(df) < 50: return None, None
+
+    # --- Export Data Hook ---
+    export_to_json(df, ticker, reporting_dates)
 
     print("Step 9: Plotting...")
     
-    # Chart A: Quantamental
     mean_pe = df['PE_Ratio'].mean()
     std_pe = df['PE_Ratio'].std()
     
+    # --- CHART 1: Quantamental (PE & EPS) ---
     fig_fund = make_subplots(specs=[[{"secondary_y": True}]])
     fig_fund.add_trace(go.Scatter(x=df.index, y=df['TTM_EPS'], name="TTM EPS", fill='tozeroy', line=dict(width=0), fillcolor='rgba(46, 204, 113, 0.2)'), secondary_y=False)
     fig_fund.add_trace(go.Scatter(x=df.index, y=df['PE_Ratio'], name="PE Ratio", line=dict(color='#2980b9', width=2)), secondary_y=True)
     
-    fig_fund.add_hline(y=mean_pe, line_dash="dot", line_color="black", secondary_y=True)
-    fig_fund.add_hline(y=mean_pe + std_pe, line_dash="dash", line_color="orange", secondary_y=True)
+    fig_fund.add_hline(y=mean_pe, line_dash="dot", line_color="black", secondary_y=True, annotation_text="Mean PE")
+    fig_fund.add_hline(y=mean_pe + std_pe, line_dash="dash", line_color="green", secondary_y=True)
     fig_fund.add_hline(y=mean_pe - std_pe, line_dash="dash", line_color="green", secondary_y=True)
-    fig_fund.add_hline(y=mean_pe + 2*std_pe, line_dash="solid", line_color="red", secondary_y=True)
+    fig_fund.add_hline(y=mean_pe + 2*std_pe, line_dash="dash", line_color="red", secondary_y=True)
+    fig_fund.add_hline(y=mean_pe - 2*std_pe, line_dash="dash", line_color="red", secondary_y=True)
 
-    fig_fund.update_layout(title=f"<b>{ticker} Quantamental Chart</b>", template="plotly_white", height=500)
+    # Set the range for the primary y-axis (TTM_EPS)
+    fig_fund.update_yaxes(
+        range=[df['TTM_EPS'].min() * 0.9, df['TTM_EPS'].max() * 1.1],  # Adjust multiplier as needed
+        secondary_y=False
+    )
 
-    # Chart B: Technicals
+    fig_fund.update_layout(title=f"<b>{ticker} Quantamental Chart (PE & EPS)</b>", template="plotly_white", height=500)
+
+    # --- CHART 2: Technicals + PEG Ratio ---
     df['RSI'] = calculate_rsi(df['Close'])
-    fig_tech = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3])
-    fig_tech.add_trace(go.Scatter(x=df.index, y=df['Close'], name="Price", line=dict(color='black')), row=1, col=1)
-    fig_tech.add_trace(go.Scatter(x=df.index, y=df['RSI'], name="RSI", line=dict(color='purple')), row=2, col=1)
-    fig_tech.add_hrect(y0=40, y1=60, row=2, col=1, fillcolor="blue", opacity=0.1, line_width=0)
     
-    fig_tech.update_layout(title=f"<b>{ticker} Technicals</b>", template="plotly_white", height=600, showlegend=False)
+    # We define specs to allow a secondary axis on the first row (Price Chart)
+    fig_tech = make_subplots(
+        rows=2, cols=1, 
+        shared_xaxes=True, 
+        row_heights=[0.7, 0.3],
+        specs=[[{"secondary_y": True}], [{"secondary_y": False}]] # Row 1 gets 2 axes, Row 2 gets 1
+    )
+    
+    # Row 1, Axis 1: Price
+    fig_tech.add_trace(go.Scatter(x=df.index, y=df['Close'], name="Price", line=dict(color='black')), row=1, col=1, secondary_y=False)
+    
+    # Row 1, Axis 2: PEG Ratio (The new requirement)
+    # We use a dotted orange line for PEG to distinguish it clearly
+    fig_tech.add_trace(go.Scatter(x=df.index, y=df['PEG_Ratio'], name="PEG Ratio", line=dict(color='#e67e22', width=1, dash='dot')), row=1, col=1, secondary_y=True)
+    
+    # Row 2, Axis 1: RSI
+    fig_tech.add_trace(go.Scatter(x=df.index, y=df['RSI'], name="RSI", line=dict(color='purple')), row=2, col=1)
+    fig_tech.add_hrect(y0=30, y1=70, row=2, col=1, fillcolor="blue", opacity=0.1, line_width=0)
+    
+    # Update Layout for dual axis
+    fig_tech.update_layout(
+        title=f"<b>{ticker} Technicals + PEG Ratio</b>", 
+        template="plotly_white", 
+        height=600, 
+        showlegend=True,
+        yaxis2=dict(title="PEG", overlaying='y', side='right', showgrid=False) # Customize secondary y-axis label
+    )
 
     return fig_fund, fig_tech
 
@@ -180,9 +233,12 @@ def save_charts_to_html(fig1, fig2, filename="charts_TEST.html"):
     filepath = os.path.join(OUTPUTS_DIR, filename)
     with open(filepath, 'w') as f:
         f.write("<html><head><title>Quantamental Charts</title></head><body>")
-        f.write(fig1.to_html(full_html=False, include_plotlyjs='cdn'))
-        f.write("<br><hr><br>")
+        
+        # ✅ ORDER SWAPPED: Fig 2 (Technicals) first, then Fig 1 (Fundamentals)
         f.write(fig2.to_html(full_html=False, include_plotlyjs='cdn'))
+        f.write("<br><hr><br>")
+        f.write(fig1.to_html(full_html=False, include_plotlyjs='cdn'))
+        
         f.write("</body></html>")
     print(f"\n✅ Charts saved to: {filepath}")
 
