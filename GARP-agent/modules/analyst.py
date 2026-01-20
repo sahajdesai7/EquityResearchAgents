@@ -22,7 +22,7 @@ load_dotenv()
 
 # --- Configuration ---
 OLLAMA_MODEL_ID = "llama3.2:3b"
-OLLAMA_EMBEDDER_MODEL = "nomic-embed-text"
+OLLAMA_EMBEDDER_MODEL = "nomic-embed-text:latest"
 MAX_WORKERS = 3  # Adjust based on your CPU (3 is safe for local Ollama)
 SEARCH_LIMIT = 5 # Number of results for both Web and KB
 
@@ -83,19 +83,26 @@ def setup_knowledge_base(ticker, pdf_path):
 
     db_uri = os.path.join(LANCEDB_DIR, "lancedb")
     table_name = f"docs_{ticker}"
+    table_path = os.path.join(db_uri, f"{table_name}.lance", "data")
 
-    embedder = OllamaEmbedder(id=OLLAMA_EMBEDDER_MODEL, dimensions=768)
-    vector_db = LanceDb(table_name=table_name, uri=db_uri, embedder=embedder)
-    knowledge = Knowledge(vector_db=vector_db)
-
-    if vector_db.exists():
-        pass # DB exists, skip ingestion
+    if os.path.exists(table_path):
+        print(f"Table {table_name} already exists. Skipping ingestion.")
+        embedder = OllamaEmbedder(id=OLLAMA_EMBEDDER_MODEL, dimensions=768)
+        vector_db = LanceDb(table_name=table_name, uri=db_uri, embedder=embedder)
+        knowledge = Knowledge(vector_db=vector_db)
+        return knowledge
     else:
         print(f"⚙️ Ingesting PDF (this happens once)...")
-        knowledge.insert(path=pdf_path, reader=PDFReader(chunk=True))
-        print("✅ Knowledge Base Created.")
-
-    return knowledge
+        embedder = OllamaEmbedder(id=OLLAMA_EMBEDDER_MODEL, dimensions=768)
+        vector_db = LanceDb(table_name=table_name, uri=db_uri, embedder=embedder)
+        knowledge = Knowledge(vector_db=vector_db)
+        try:
+            knowledge.insert(path=pdf_path, reader=PDFReader(chunk=True))
+            print("✅ Knowledge Base Created.")
+            return knowledge
+        except Exception as e:
+            print(f"❌ Failed to ingest PDF: {e}")
+            return None
 
 # --- 3. TASK WORKER (OPTIMIZED) ---
 def process_single_task(task, kb, company_name, current_year):
