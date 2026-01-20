@@ -88,6 +88,8 @@ This project implements an Agentic AI workflow to identify and analyze companies
 ├── .gitignore          # Contents to be ignored by Git
 ├── README.md           # This file
 ├── requirements.txt    # Library list
+├── static_inputs       # Ticker list
+├── outputs             # Outputs, both intermediate and final Investment Memo
 └── modules/
     ├── screener.py     # Step 1: Growth Filter
     ├── charts.py       # Step 2: Visuals (Plotly)

@@ -153,7 +153,7 @@ def format_score_card(score_data: dict) -> str:
     md += f"\n**Final Verdict: {score_data['percent']}%** {rec_emoji} **{score_data['recommendation']}**\n\n---\n"
     return md
 
-def save_full_report(ticker, markdown_content, charts_filepath, annexure_1_markdown, annexure_2_markdown):
+def save_full_report(ticker, markdown_content, charts_filepath, annexure_1_markdown, annexure_2_markdown, annexure_3_markdown):
     """
     Saves the final report as HTML.
     Includes:
@@ -161,6 +161,7 @@ def save_full_report(ticker, markdown_content, charts_filepath, annexure_1_markd
     2. Interactive Charts
     3. Annexure 1: Raw Fundamental Data (Table)
     4. Annexure 2: Market Research Data (Text)
+    5. Annexure 3: Forensic Analysis (Text/Tables)
     """
     
     # 1. Read Charts
@@ -171,7 +172,8 @@ def save_full_report(ticker, markdown_content, charts_filepath, annexure_1_markd
     # 2. Convert Content to HTML
     body_html = markdown.markdown(markdown_content, extensions=['tables'])
     annexure_1_html = markdown.markdown(annexure_1_markdown, extensions=['tables'])
-    annexure_2_html = markdown.markdown(annexure_2_markdown, extensions=['tables']) # Analyst notes usually have tables too
+    annexure_2_html = markdown.markdown(annexure_2_markdown, extensions=['tables'])
+    annexure_3_html = markdown.markdown(annexure_3_markdown, extensions=['tables'])
     
     full_html = f"""
     <!DOCTYPE html>
@@ -198,13 +200,14 @@ def save_full_report(ticker, markdown_content, charts_filepath, annexure_1_markd
             .annexure-container h2 {{ color: #c0392b; }}
             .annexure-table-wrapper {{ overflow-x: auto; }}
             
-            /* Annexure 2 (Text Report) */
+            /* Annexures 2 & 3 (Text Reports) */
             .annexure-text-wrapper {{ 
                 background-color: #f8f9fa; 
                 padding: 20px; 
                 border-radius: 5px; 
                 border: 1px solid #e9ecef;
                 font-size: 0.95em;
+                overflow-x: auto; /* Ensures wide forensic tables don't break layout */
             }}
         </style>
     </head>
@@ -230,6 +233,14 @@ def save_full_report(ticker, markdown_content, charts_filepath, annexure_1_markd
                 <p><em>Raw data from Analyst Agent (News, Moat, Management).</em></p>
                 <div class="annexure-text-wrapper">
                     {annexure_2_html}
+                </div>
+            </div>
+
+            <div class="annexure-container">
+                <h2>Annexure 3: Forensic Analysis</h2>
+                <p><em>Detailed earnings quality, accounting checks, and financial health trends.</em></p>
+                <div class="annexure-text-wrapper">
+                    {annexure_3_html}
                 </div>
             </div>
         </div>
@@ -365,7 +376,6 @@ def generate_investment_memo(ticker):
     # Initialize State & Agents
     state = MemoState(ticker)
     reporter = get_reporter_agent()
-    # Reviewer Agent Removed
     
     # Execution Pipeline
     with tqdm(total=4, desc="Workflow", unit="step") as pbar:
@@ -391,13 +401,14 @@ def generate_investment_memo(ticker):
         
         chart_file = get_latest_file(ticker, "charts_")
         
-        # ✅ Updated Call: Passing both Annexure 1 (JSON Table) and Annexure 2 (Market Data Text)
+        # ✅ Updated Call: Passing Annexure 1, 2, AND 3
         output_path = save_full_report(
             ticker, 
             state.final_markdown, 
             chart_file, 
             state.full_annexure_table, 
-            state.market_data
+            state.market_data,
+            state.forensic_data
         )
         pbar.update(1)
 
