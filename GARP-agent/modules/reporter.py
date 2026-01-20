@@ -32,7 +32,7 @@ class MemoState:
         self.forensic_data = ""
         self.valuation_facts = {}
         self.valuation_table = ""
-        self.full_annexure_table = "" # New: Holds the raw JSON table
+        self.full_annexure_table = "" # Annexure 1 (JSON Data)
         self.scores = {}       # Raw integers from LLM
         self.scoring_data = {} # Computed totals & recommendation (Python)
         self.thesis = ""
@@ -91,7 +91,7 @@ def build_valuation_facts(ticker: str) -> Dict[str, Any]:
         return {"available": False, "error": str(e)}
 
 def build_full_annexure(ticker: str) -> str:
-    """Reads JSON and converts the ENTIRE content to a Markdown table for the Annexure."""
+    """Reads JSON and converts the ENTIRE content to a Markdown table for Annexure 1."""
     json_path = get_fundamental_json(ticker)
     if not json_path: return "_Data not available_"
 
@@ -153,19 +153,25 @@ def format_score_card(score_data: dict) -> str:
     md += f"\n**Final Verdict: {score_data['percent']}%** {rec_emoji} **{score_data['recommendation']}**\n\n---\n"
     return md
 
-def save_full_report(ticker, markdown_content, charts_filepath, annexure_markdown):
-    """Saves the final report as HTML with embedded charts AND the raw data annexure."""
+def save_full_report(ticker, markdown_content, charts_filepath, annexure_1_markdown, annexure_2_markdown):
+    """
+    Saves the final report as HTML.
+    Includes:
+    1. Main Thesis & Scorecard
+    2. Interactive Charts
+    3. Annexure 1: Raw Fundamental Data (Table)
+    4. Annexure 2: Market Research Data (Text)
+    """
     
     # 1. Read Charts
     charts_html = "<p><em>Charts not available.</em></p>"
     if charts_filepath and os.path.exists(charts_filepath):
         with open(charts_filepath, "r", encoding="utf-8") as f: charts_html = f.read()
 
-    # 2. Convert Main Report to HTML
+    # 2. Convert Content to HTML
     body_html = markdown.markdown(markdown_content, extensions=['tables'])
-    
-    # 3. Convert Annexure to HTML
-    annexure_html = markdown.markdown(annexure_markdown, extensions=['tables'])
+    annexure_1_html = markdown.markdown(annexure_1_markdown, extensions=['tables'])
+    annexure_2_html = markdown.markdown(annexure_2_markdown, extensions=['tables']) # Analyst notes usually have tables too
     
     full_html = f"""
     <!DOCTYPE html>
@@ -175,15 +181,31 @@ def save_full_report(ticker, markdown_content, charts_filepath, annexure_markdow
         <style>
             body {{ font-family: 'Segoe UI', sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; line-height: 1.6; background: #f9f9f9; color: #333; }}
             .report-container {{ background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }}
-            h1, h2 {{ color: #2c3e50; }} h1 {{ border-bottom: 2px solid #eee; }}
+            h1, h2 {{ color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px; }}
+            h3 {{ color: #7f8c8d; margin-top: 20px; }}
+            
+            /* Tables */
             table {{ width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.9em; }}
             th, td {{ padding: 10px; border: 1px solid #ddd; text-align: left; }} 
             th {{ background: #f2f2f2; font-weight: 600; }}
             tr:nth-child(even) {{ background-color: #fafafa; }}
+            
+            /* Visual Sections */
             .charts-container {{ margin-top: 40px; border-top: 3px solid #3498db; padding-top: 20px; }}
+            
+            /* Annexure 1 (Data Table) */
             .annexure-container {{ margin-top: 50px; border-top: 3px solid #e74c3c; padding-top: 20px; }}
             .annexure-container h2 {{ color: #c0392b; }}
             .annexure-table-wrapper {{ overflow-x: auto; }}
+            
+            /* Annexure 2 (Text Report) */
+            .annexure-text-wrapper {{ 
+                background-color: #f8f9fa; 
+                padding: 20px; 
+                border-radius: 5px; 
+                border: 1px solid #e9ecef;
+                font-size: 0.95em;
+            }}
         </style>
     </head>
     <body>
@@ -196,10 +218,18 @@ def save_full_report(ticker, markdown_content, charts_filepath, annexure_markdow
             </div>
             
             <div class="annexure-container">
-                <h2>Annexure: Raw Fundamental Data</h2>
+                <h2>Annexure 1: Raw Fundamental Data</h2>
                 <p><em>Full historical dataset used for analysis.</em></p>
                 <div class="annexure-table-wrapper">
-                    {annexure_html}
+                    {annexure_1_html}
+                </div>
+            </div>
+
+            <div class="annexure-container">
+                <h2>Annexure 2: Market Research & Sentiment</h2>
+                <p><em>Raw data from Analyst Agent (News, Moat, Management).</em></p>
+                <div class="annexure-text-wrapper">
+                    {annexure_2_html}
                 </div>
             </div>
         </div>
@@ -228,7 +258,7 @@ def get_reporter_agent(model_id=MODEL_ID):
             "  1) Growth in earnings with positive change in current stock price.",
             "  2) Market sentiment leads to rerating of stock to a higher PE.",
             "The reverse is also true (PE contraction) and you must flag the risk of a reversal too.",
-            "While doing so, be balanced: neither a pessimist nor an optimist, but a pragmatist and realist."
+            "While doing so, be balanced: neither a pessimist nor an optimist, but a pragmatist and realist.",
             
             "Output formatting: Use clear Markdown. Integers for scores."
         ],
@@ -253,7 +283,7 @@ def ingest_node(state: MemoState):
     else:
         state.valuation_table = "Valuation Data Unavailable."
         
-    # 2. Build Full Annexure
+    # 2. Build Full Annexure 1 (JSON Table)
     state.full_annexure_table = build_full_annexure(state.ticker)
 
 def scoring_node(state: MemoState, agent):
@@ -261,7 +291,7 @@ def scoring_node(state: MemoState, agent):
     prompt = f"""
     Evaluate {state.ticker} based on these inputs.
     
-    [MARKET DATA]: {state.market_data[:2000]}
+    [MARKET DATA]: {state.market_data}
     [FORENSIC DATA]: {state.forensic_data}
     [VALUATION TABLE]:\n{state.valuation_table}
     
@@ -360,8 +390,15 @@ def generate_investment_memo(ticker):
         assembly_node(state)
         
         chart_file = get_latest_file(ticker, "charts_")
-        # Pass the annexure table to the save function
-        output_path = save_full_report(ticker, state.final_markdown, chart_file, state.full_annexure_table)
+        
+        # ✅ Updated Call: Passing both Annexure 1 (JSON Table) and Annexure 2 (Market Data Text)
+        output_path = save_full_report(
+            ticker, 
+            state.final_markdown, 
+            chart_file, 
+            state.full_annexure_table, 
+            state.market_data
+        )
         pbar.update(1)
 
     end_time = time.time()

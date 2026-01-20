@@ -115,32 +115,59 @@ def get_fundamental_data(ticker):
 def export_to_json(df, ticker, reporting_dates):
     """
     Exports rows corresponding to the company's specific Quarter/Year End dates.
-    Uses 'asof' logic to find the closest trading day if the report date was a weekend/holiday.
+    Enforces a strict logical order for JSON keys (Metadata -> Price -> EPS -> Valuation -> Financials).
     """
     print(f"\n--- 💾 Exporting JSON for {ticker} ---")
     if not os.path.exists(OUTPUTS_DIR):
         os.makedirs(OUTPUTS_DIR)
+
+    # Define the desired logical order for the JSON output
+    LOGICAL_ORDER = [
+        # Metadata
+        "Report_Date_Official", "Trading_Date_Used", "Data_Source_Type",
         
+        # Market Data
+        "Close",
+        
+        # EPS & Growth
+        "TTM_EPS", "EPS_Growth_YoY",
+        
+        # Valuation
+        "PE_Ratio", "PEG_Ratio",
+        
+        # Income Statement
+        "Revenue", "EBIT", "Net_Income",
+        
+        # Margins & Returns
+        "Net_Margin_Pct", "RONW_Pct",
+        
+        # Balance Sheet & Debt
+        "Total_Debt", "Equity", "Debt_to_Equity", "Interest_Coverage"
+    ]
+    
     export_data = []
     
     # Filter dates to those within our available price history range
     valid_dates = [d for d in reporting_dates if d >= df.index.min() and d <= df.index.max()]
     
     for report_date in valid_dates:
-        # Find the index location in df that is closest to (but not after) the report_date
-        # method='pad' / 'ffill' ensures we get the latest close price as of that report date
         try:
+            # Find closest trading day (asof/pad logic)
             loc = df.index.get_indexer([report_date], method='pad')[0]
             
-            # If valid index found (get_indexer returns -1 if out of bounds)
             if loc != -1:
+                # 1. Get raw data from DataFrame
                 row_data = df.iloc[loc].to_dict()
                 
-                # Add metadata for clarity
+                # 2. Add/Inject Metadata
                 row_data['Report_Date_Official'] = report_date.strftime('%Y-%m-%d')
                 row_data['Trading_Date_Used'] = df.index[loc].strftime('%Y-%m-%d')
                 
-                # Convert timestamps in dict to strings for JSON
+                # Ensure Data_Source_Type exists (defaulting if not in df)
+                if 'Data_Source_Type' not in row_data:
+                    row_data['Data_Source_Type'] = "Quarterly_TTM"
+
+                # 3. Clean Data (Handle Timestamps & NaN)
                 clean_row = {}
                 for k, v in row_data.items():
                     if isinstance(v, (pd.Timestamp, datetime)):
@@ -149,8 +176,22 @@ def export_to_json(df, ticker, reporting_dates):
                         clean_row[k] = None
                     else:
                         clean_row[k] = v
-                        
-                export_data.append(clean_row)
+                
+                # 4. Reorder Dictionary based on LOGICAL_ORDER
+                ordered_row = {}
+                
+                # First, add keys specifically defined in our logical order
+                for key in LOGICAL_ORDER:
+                    if key in clean_row:
+                        ordered_row[key] = clean_row[key]
+                
+                # Then, append any remaining keys (dynamic columns) that weren't in the list
+                for key in clean_row:
+                    if key not in ordered_row:
+                        ordered_row[key] = clean_row[key]
+
+                export_data.append(ordered_row)
+
         except Exception as e:
             print(f"Warning skipping date {report_date}: {e}")
 

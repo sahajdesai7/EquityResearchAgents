@@ -174,13 +174,13 @@ def check_growth_criteria(ticker, debug=False):
 
         # --- FILTER GATES ---
         # 1. Growth Thresholds
-        if rev_growth_q < 0.09 or rev_growth_a < 0.05: return None
-        if eps_growth_q < 0.15 or eps_growth_a < 0.075: return None
+        if rev_growth_q < 0.09 and rev_growth_a < 0.05: return None
+        if eps_growth_q < 0.09 and eps_growth_a < 0.05: return None
         
         # 2. PE Expansion Gate (<= 30%)
         # Ignore checks if PE is invalid/negative, but don't crash
         if pe_current > 0 and pe_old > 0:
-            if pe_expansion > 0.20: 
+            if pe_expansion > 0.30: 
                 if debug: print(f"❌ Excessive PE Expansion: {pe_expansion:.1%}")
                 return None
 
@@ -238,7 +238,7 @@ def screen_stocks():
         print(f"💾 Results saved to: {filename}")
         print(df_results)
         
-        selected_ticker = input("\n👉 Enter a specific Ticker from the list above to proceed to Deep Dive: ").strip()
+        selected_ticker = input("\n👉 Enter a specific Ticker from the list above to proceed to Deep Dive (RELIANCE.NS or AAPL): ").strip()
         return selected_ticker
     else:
         print("❌ No companies matched the criteria.")

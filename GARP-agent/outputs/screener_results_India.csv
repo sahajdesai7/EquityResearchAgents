@@ -1,2 +1,8 @@
-Ticker,Company,Rev_Growth_Q1,Rev_Growth_Q2,EPS_Growth_Q1,EPS_Growth_Q2,Current_PE,Old_PE,PE_Expansion
-AARTIDRUGS.NS,Aarti Drugs Limited,9.1,,29.24,63.26,25.93,43.49,-40.37
+Ticker,Company,Rev_Growth_Q_YoY,Rev_Growth_Ann,EPS_Growth_Q_YoY,EPS_Growth_Ann,Current_PE,Old_PE,PE_Expansion
+20MICRONS.NS,20 Microns Limited,-3.91,17.48,5.81,11.26,13.25,17.6,-24.72
+3MINDIA.NS,3M India Limited,14.27,6.11,13.07,-18.4,88.42,77.26,14.44
+AARTIDRUGS.NS,Aarti Drugs Limited,9.1,-5.58,29.24,-1.13,25.14,33.2,-24.28
+ABAN.NS,Aban Offshore Limited,-9.05,19.01,166.63,-32.51,0.0,0.0,0.0
+ABB.NS,ABB India Limited,11.97,16.6,-20.69,50.69,78.48,83.55,-6.07
+ACE.NS,Action Construction Equipment Limited,-11.19,14.26,16.12,24.71,31.47,51.35,-38.72
+ADANIENT.NS,Adani Enterprises Limited,,1.45,84.75,122.28,63.39,129.4,-51.01
