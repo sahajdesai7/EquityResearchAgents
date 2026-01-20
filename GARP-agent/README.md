@@ -2,11 +2,11 @@
 **A Multi-Agent Framework for GARP Discovery & Forensic Analysis**
 
 ## 🏗️ Technical Architecture
-Framework: Agno (formerly Phidata).
-LLM: Ollama (llama3.2:3b).
-Embeddings: nomic-embed-text.
-Database: LanceDB (Local vector storage).
-Search: DuckDuckGo (via ddgs).
+**Framework**: Agno (formerly Phidata).<br>
+**LLM**: Ollama (llama3.2:3b).<br>
+**Embeddings**: nomic-embed-text.<br>
+**Database**: LanceDB (Local vector storage).<br>
+**Search**: DuckDuckGo (via ddgs).
 
 ## 🚀 Installation & Setup
 ### 1. Prerequisites
@@ -27,7 +27,7 @@ Run the main pipeline:
 Follow the CLI prompts to select a region (US/India) and pick a stock.
 
 ## 🎯 Overview
-This project implements an Agentic AI workflow to identify and analyze companies with high growth potential and reasonable valuations (**GARP**). It enforces a strict separation between quantitative calculation (handled by **Python/NumPy**) and qualitative reasoning (handled by **LLMs** via OpenRouter).
+This project implements an Agentic AI workflow to identify and analyze companies with high growth potential and reasonable valuations (**GARP**). It enforces a strict separation between quantitative calculation (handled by **Python**) and qualitative reasoning (handled by **LLMs**).
 
 ## 🛠️ The Seven-Step Methodology
 
