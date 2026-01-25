@@ -1,0 +1,24 @@
+{
+    "dealbox_candidates": [
+        {
+            "business_name": "Web Hosting Company for Sale in Bangkok, Thailand",
+            "city": "Bangkok",
+            "country": "Thailand",
+            "ebitda_margin_avg": 35.0,
+            "sales_converted_eur_millions": 0.164,
+            "price_converted_eur_millions": 0.164,
+            "stake_sale_percentage": 100.0,
+            "contact_url": "https://www.smergers.com/business/web-hosting-company-for-sale-in-bangkok-thailand/ao3ry/"
+        },
+        {
+            "business_name": "FinTech Business Assets for Sale in Weston, USA",
+            "city": "Weston",
+            "country": "USA",
+            "ebitda_margin_avg": null,
+            "sales_converted_eur_millions": 2.56,
+            "price_converted_eur_millions": 2.76,
+            "stake_sale_percentage": 100.0,
+            "contact_url": "https://www.smergers.com/business/fintech-business-assets-for-sale-in-weston-usa/h9a7o/"
+        }
+    ]
+}
