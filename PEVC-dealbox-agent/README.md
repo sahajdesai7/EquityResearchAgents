@@ -8,51 +8,55 @@ The agent operates as a sequential pipeline consisting of three distinct layers:
 ### 1. Ingestion Layer (Crawler)
 **Tool: Firecrawl API**
 
-Function: Converts unstructured HTML from Smergers into an LLM-ready structured schema.
+**Function**: Converts unstructured HTML from Smergers into an LLM-ready structured schema.
 
-Output: Raw JSON containing listings with generic headlines and dirty financial strings.
+**Output**: Raw JSON containing listings with generic headlines and dirty financial strings.
 
 ### 2. Intelligence Layer (Cleaner)
 **Tool: Groq API (openai/gpt-oss-120b) + Pydantic**
 
-Function:
+**Function**:
 
-Parsing: Extracts structured fields (City, Country, Currency, Units) from raw text.
+*Parsing*: Extracts structured fields (City, Country, Currency, Units) from raw text.
 
-Math Engine: Python-based deterministic calculation (not LLM hallucination) handles currency conversion (e.g., INR Crores to EUR Millions) and margin averaging.
+*Math Engine*: Python-based deterministic calculation (not LLM hallucination) handles currency conversion (e.g., INR Crores to EUR Millions) and margin averaging.
 
-Output: Clean, normalized JSON with standard units (EUR Millions).
+**Output**: Clean, normalized JSON with standard units (EUR Millions).
 
 ### 3. Decision Layer (Filter)
 **Tool: Python Logic + Groq Semantic Check**
 
-Function:
+**Function**:
 
-Hard Filter: Applies strict financial thresholds (e.g., Sales > €1M for full sales).
+*Hard Filter*: Applies strict financial thresholds (e.g., Sales > €1M for full sales).
 
-Semantic Filter: Uses Groq to validate geography (e.g., "Is 'Bangkok' in Asia?").
+*Semantic Filter*: Uses Groq to validate geography (e.g., "Is 'Bangkok' in Asia?").
 
-Output: Final "Deal Box" candidates ready for analyst review.
+**Output**: Final "Deal Box" candidates ready for analyst review.
 
 ## 🚀 Setup & Usage
 Prerequisites: Python 3.9+
 
 ### 1. Install Dependencies:
 
-Bash: pip install -r requirements.txt
-
+Bash: 
+```text
+pip install -r requirements.txt
+```
 ### 2. Configure Environment: 
 
 Create a .env file with your keys:
-
+```text
 FIRECRAWL_API_KEY=fc-your_key
 GROQ_API_KEY=gsk_your_key
 GROQ_MODEL_ID=openai/gpt-oss-120b
-
+```
 ### 3. Run Pipeline:
 
-Bash: python main.py
-
+Bash: 
+```text
+python main.py
+```
 ## 📂 Folder Structure
 
 ```text
