@@ -1,0 +1,290 @@
+[
+    {
+        "content": "Namaste Sharks.I want you to close your eyes for a second. Think about that one specific achaar (pickle) or laddu that only your Nani or Dadi used to make. The one you haven\u2019t tasted in 10 years. The one no supermarket brand has ever been able to replicate.You can open your eyes. That taste is disappearing. We are losing our culinary heritage to standardized, preservative-filled packets. But more importantly, the creators of those recipes\u2014millions of women across rural India\u2014are unacknowledged and unpaid.My name is Sahaj, and I am the founder of Viraasat.Viraasat is not just a packaged food brand; it is India\u2019s first \"Recipe Licensing\" platform. We identify home chefs with unique, generational recipes in Tier-2 and Tier-3 towns. We manufacture and sell their products under our brand, but here is the twist: We treat their recipe as Intellectual Property (IP).For every packet sold, the creator\u2014the \"Dadiji\" or \"Mataji\"\u2014gets a distinct Royalty fee, forever. They don't just get a wage; they get ownership. Unka hunar, unki pehchan. (Their talent, their identity.)We launched 8 months ago with just 3 SKUs: A Jackfruit Pickle from Bihar, a Bamboo Shoot chutney from Assam, and a ragi cookie from Karnataka.The Traction:We have sold over 25,000 units.We have a repeat rate of 42%.We have generated \u20b965 Lakhs in revenue, with a net margin of 18%.Today, I am here to ensure that no Indian recipe is ever forgotten.The Ask:I am seeking \u20b950 Lakhs for 2% equity in Viraasat.Sharks, who wants to build the biggest catalog of Indian taste with me?",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": null
+    },
+    {
+        "content": "Bhai, recipe\u2011licensing ka concept kaafi killer lag raha hai\u2014par brand aur acquisition engine kaise kaam karega? Aap kaise ensure karenge ki har \u201cDadiji\u201d ki story consumer tak pohoch jaye aur viral ho?",
+        "additional_kwargs": {
+            "reasoning_content": "We need to respond as \"The Visionian\", a Shark Tank style investor. Follow guidelines: ask one sharp question, short, high energy, Hinglish, etc. Since pitch is about brand/story, we can ask about uniqueness, category creation, marketing plan, scalability, etc. We must not give final decision. So ask a question: maybe about how they acquire recipes, ensure quality, protect IP, marketing strategy, or unit economics. Choose one. Let's ask about brand story: \"Ye sab theek hai, par brand kya hai? How will you market these heritage recipes to mass D2C?\" Or ask about scaling: \"Aapka go-to-market strategy kya hai, aur aap kaise viral banane wale ho?\" Must be one question. Let's do: \"Bhai, recipe licensing ka concept bada unique hai\u2014par aapka branding aur acquisition engine kaise kaam karega, aur aap kaise ensure karoge ki har 'Dadiji' ka story consumer tak pohoch jaye?\" Ensure Hinglish, high energy."
+        },
+        "response_metadata": {
+            "token_usage": {
+                "completion_tokens": 278,
+                "prompt_tokens": 902,
+                "total_tokens": 1180,
+                "completion_time": 0.59083702,
+                "completion_tokens_details": {
+                    "reasoning_tokens": 216
+                },
+                "prompt_time": 0.046595843,
+                "prompt_tokens_details": null,
+                "queue_time": 0.215445386,
+                "total_time": 0.637432863
+            },
+            "model_name": "openai/gpt-oss-120b",
+            "system_fingerprint": "fp_a09bde29de",
+            "service_tier": "on_demand",
+            "finish_reason": "stop",
+            "logprobs": null,
+            "model_provider": "groq"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019c66fa-9cf1-72a1-bdd7-cb1a91a79626-0",
+        "tool_calls": [],
+        "invalid_tool_calls": [],
+        "usage_metadata": {
+            "input_tokens": 902,
+            "output_tokens": 278,
+            "total_tokens": 1180,
+            "output_token_details": {
+                "reasoning": 216
+            }
+        }
+    },
+    {
+        "content": "We don't just sell a jar; we acquire a household. The Hook: Contrast a \"Perfectly Square, Red, Industrial Pickle\" from a big brand with a \"Rough-cut, Sun-dried, Masala-rich\" Viraasat pickle.The Message: \"Your Nani didn't use a lab to measure salt; she used her heart. Why are you eating chemicals for breakfast?\" Every jar has a QR Code on the lid. When the customer scans it, they don't see a website\u2014they see a 15-second video of the specific creator (the Mataji) in her village, saying:\"Beta, I hope you liked the spices. I dried them on my own roof for three days. Let me know if the salt is okay.\"",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": null
+    },
+    {
+        "content": "Bhai, story aur QR\u2011video ka vibe mast hai\u2014par aapke \u201crecipe IP\u201d ko protect karne ka system kya hai? Agar koi competitor same grandma ki recipe copy kar le, toh aap kaise defend karenge?",
+        "additional_kwargs": {
+            "reasoning_content": "We need to respond as The Visionian, following instructions: short, ask one sharp question. We should evaluate brand/story, ask about scalability or category creation. Maybe ask about IP protection, supply chain, or how they plan to scale beyond 3 SKUs. Also ask about marketing cost or viral potential. Keep tone casual, Hinglish."
+        },
+        "response_metadata": {
+            "token_usage": {
+                "completion_tokens": 129,
+                "prompt_tokens": 1117,
+                "total_tokens": 1246,
+                "completion_time": 0.272164053,
+                "completion_tokens_details": {
+                    "reasoning_tokens": 70
+                },
+                "prompt_time": 0.078604184,
+                "prompt_tokens_details": null,
+                "queue_time": 0.049510365,
+                "total_time": 0.350768237
+            },
+            "model_name": "openai/gpt-oss-120b",
+            "system_fingerprint": "fp_8a618bed98",
+            "service_tier": "on_demand",
+            "finish_reason": "stop",
+            "logprobs": null,
+            "model_provider": "groq"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019c66fc-5ceb-7ad2-87c7-d1261e77872b-0",
+        "tool_calls": [],
+        "invalid_tool_calls": [],
+        "usage_metadata": {
+            "input_tokens": 1117,
+            "output_tokens": 129,
+            "total_tokens": 1246,
+            "output_token_details": {
+                "reasoning": 70
+            }
+        }
+    },
+    {
+        "content": "Shark, you can copy the ingredients, but you cannot copy the process. And in Indian cooking, the 'Hand' (Haath ka Swad) is 90% of the IP. We use a 'Split-Manufacturing' process. The grandma doesn't make the whole jar from A to Z anymore. She prepares the 'wet base' (the mangoes/vegetables). We supply the 'Dry Spice Blend' from our central lab. She doesn't know the exact ratio of the spice blend; we don't know her exact sun-drying timing. The final taste only happens when both parts meet. Even if someone hires her, they don't get the spice blend. If someone steals the spice blend, they don't get her process.",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": null
+    },
+    {
+        "content": "The story is nice, but let\u2019s get to the math.  \n\n**What is your Customer Acquisition Cost (CAC) per household and the corresponding Lifetime Value (LTV) you\u2019re getting from a single \u201cDadiji\u201d recipe?**  \n\nGive me the actual numbers\u2014marketing spend, average order value, repeat\u2011purchase frequency, royalty per unit, and the gross margin after those royalties. Hawa mein baat mat karo.",
+        "additional_kwargs": {
+            "reasoning_content": "We need to continue as The Fundamentalist, grilling numbers. Ask one tough question about unit economics, CAC, gross margin, scalability, etc. The user gave some info but not numbers. We should ask about CAC, customer acquisition cost, repeat purchase cost, supply chain cost, royalty per unit, etc. Keep tone sharp, interrogative."
+        },
+        "response_metadata": {
+            "token_usage": {
+                "completion_tokens": 166,
+                "prompt_tokens": 1319,
+                "total_tokens": 1485,
+                "completion_time": 0.358299636,
+                "completion_tokens_details": {
+                    "reasoning_tokens": 70
+                },
+                "prompt_time": 0.0633655,
+                "prompt_tokens_details": null,
+                "queue_time": 0.158535834,
+                "total_time": 0.421665136
+            },
+            "model_name": "openai/gpt-oss-120b",
+            "system_fingerprint": "fp_5a93aea882",
+            "service_tier": "on_demand",
+            "finish_reason": "stop",
+            "logprobs": null,
+            "model_provider": "groq"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019c66fd-11b8-7de2-b28e-6c6eab772569-0",
+        "tool_calls": [],
+        "invalid_tool_calls": [],
+        "usage_metadata": {
+            "input_tokens": 1319,
+            "output_tokens": 166,
+            "total_tokens": 1485,
+            "output_token_details": {
+                "reasoning": 70
+            }
+        }
+    },
+    {
+        "content": "The Customer Unit (The \"Household\") We don't look at \"Cost Per Click.\" We look at \"Cost Per Eating Table.\"CAC (Blended): \u20b980.(This gets the jar into the house.)AOV (Average Order Value): \u20b9600.(Customers rarely buy 1 jar. They buy 1.7 jars on average, usually pairing a spicy pickle with a sweet chutney.)Contribution Margin 1 (First Order): \u20b990.(Gross Margin \u20b9270 minus CAC \u20b980 minus Logistics/Ops \u20b9100). We are profitable on the first transaction. We don't burn cash to acquire users. The LTV (Lifetime Value):\"Our repeat rate is 42%. For that retained household:\"Frequency: They buy 4 times a year.Annual Gross Profit: \u20b9170 (Margin per order) x 4 orders = \u20b9680 per year.LTV (18 Months): \u20b91,020. Shark, I spend \u20b980 to acquire a customer who gives me \u20b91,020 in profit over 18 months. That is an LTV:CAC ratio of 12:1. Industry standard is 3:1. We are 4x more efficient because our retention is organic, not discount-driven. The \"Recipe\" Unit (The Asset Class)\"Now, let\u2019s look at the 'Dadiji' as an investment asset.\"CAPEX (Launch Cost): \u20b925,000.(To find, test, and legalize one recipe).Revenue Per Recipe (Year 1): \u20b912 Lakhs.(Average sales volume per SKU).Royalty Paid to Creator: \u20b950,000+ per year.(She makes 2x her investment in time).Net Profit to Company: \u20b92.1 Lakhs per recipe (Year 1) Shark, I put \u20b925,000 into a recipe, and it spits out \u20b92.1 Lakhs of pure profit in Year 1. That is an 8x Return on Capital Employed (ROCE) on the recipe level. I am not asking for money to figure out the model. I am asking for money to buy the fuel (inventory) for a machine that is already printing money.",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": null
+    },
+    {
+        "content": "Your \u20b990 contribution per first jar \u2013 does that already include the royalty you pay to the \u201cDadiji\u201d on each unit, or is the royalty only reflected in the recipe\u2011level profit you quoted later? Break down the per\u2011unit cost structure (ingredients, spice blend, logistics, royalty, packaging) and tell me the net contribution after **all** those outflows. Hawa mein baat mat karo.",
+        "additional_kwargs": {
+            "reasoning_content": "We need to respond as The Fundamentalist, sharp, interrogative, focusing on numbers. The user gave CAC, LTV, margins, ROCE. We need to grill further: ask about churn, gross margin after royalty, scalability, unit economics per SKU, cash burn, runway, valuation, equity split, cap table, how many recipes can be scaled, supply chain constraints, IP protection, defensibility, and ask for detailed financials. Also call out any inconsistencies: CAC 80, gross margin 270, logistics 100, contribution 90 seems okay. But need to verify royalty cost included? They said royalty 50k per year per recipe; need to see per unit royalty cost. Also need to see total burn, cash runway, ask about unit economics for scaling to 1000 SKUs, need to see CAPEX per recipe vs profit, break-even point. Also ask about valuation: they ask 50 Lakhs for 2% implies 25 Crore valuation; is that justified? Need to challenge. Also ask about equity split among founders, cap table. Ask about defensibility: can competitor replicate split-manufacturing? Also ask about supply chain: can they source enough grandmothers, quality control, logistics. Ask about cash flow: they claim profit but need to see cash conversion. Also ask about churn: repeat rate 42% but frequency 4 per year, does that align? 42% repeat means 58% churn after first? Need clarity. Ask about unit economics per recipe: they said net profit 2.1 Lakhs per recipe, but need to know number of units sold to generate that. Also ask about distribution channels: offline, online, etc. Also ask about capital needed: 50 Lakhs for inventory? Need to see runway. Also ask about equity: 2% for 50 Lakhs, so implied 25 Cr valuation; given they have 65 Lakhs revenue, 18% net margin, profit ~12 Lakhs? Actually net margin 18% of 65 Lakhs = 11.7 Lakhs profit. Valuation 25 Cr seems high; need to challenge. Also ask about cap table and founder equity. Also ask about any debt.\n\nWe need to be short, ask one tough question at a time. So respond with a sharp question focusing on a key point. Probably ask about the royalty cost per unit and whether gross margin includes it, or ask about cash burn and runway. Or ask about scalability: how many new recipes can you onboard per month given CAPEX 25k each, and what is the bottleneck. Let's ask about the unit economics on a per-recipe basis and the scalability.\n\nThus respond with a pointed question: \"Your ROCE looks great, but can you break down the per\u2011unit cost structure including the royalty, and show the contribution margin after royalty? Also, how many new recipes can you realistically launch per quarter given the \u20b925k CAPEX and your sourcing constraints?\" That is one question but maybe two. The instruction says ask ONE tough question at a time. So choose one: ask about royalty inclusion.\n\nWe'll ask: \"Your contribution margin of \u20b990 per first order\u2014does that already factor in the royalty you pay to the Grandma per jar, or is that royalty only accounted for at the recipe\u2011level profit? Show me the per\u2011unit economics after royalty.\""
+        },
+        "response_metadata": {
+            "token_usage": {
+                "completion_tokens": 785,
+                "prompt_tokens": 1856,
+                "total_tokens": 2641,
+                "completion_time": 1.677205162,
+                "completion_tokens_details": {
+                    "reasoning_tokens": 692
+                },
+                "prompt_time": 0.097046485,
+                "prompt_tokens_details": null,
+                "queue_time": 0.047046135,
+                "total_time": 1.774251647
+            },
+            "model_name": "openai/gpt-oss-120b",
+            "system_fingerprint": "fp_626f3fc5e0",
+            "service_tier": "on_demand",
+            "finish_reason": "stop",
+            "logprobs": null,
+            "model_provider": "groq"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019c6702-89bd-7341-a609-381b59d3d4b0-0",
+        "tool_calls": [],
+        "invalid_tool_calls": [],
+        "usage_metadata": {
+            "input_tokens": 1856,
+            "output_tokens": 785,
+            "total_tokens": 2641,
+            "output_token_details": {
+                "reasoning": 692
+            }
+        }
+    },
+    {
+        "content": "es, Shark. The royalty is a hard cost (COGS). It is paid on production/sales, not on profit. If I sell a jar and make a loss, the Dadiji still gets her \u20b915. She takes zero market risk.Here is the exact Per-Unit Waterfall for one jar of \"Jackfruit Pickle\" (300g). Item,Cost (\u20b9),% of SP,NotesSelling Price (ASP),\u20b9350,100%,(Pre-Discount)(-) Ingredients & Mfg,\u20b990,25.7%,\"Raw Mango, Oil, & The Spice Blend\"(-) Creator Royalty,\u20b915,4.3%,Paid to 'Dadiji' (Fixed Fee)(-) Primary Packaging,\u20b915,4.3%,\"Glass Jar, Metal Lug Cap, Label\"= GROSS MARGIN,\u20b9230,65.7%,(Product Margin)(-) Logistics & Ops,\u20b950,14.2%,Shipping + Corrugated Box + Tape(-) Marketing (CAC),\u20b980,22.8%,Performance Ads (FB/Insta)= NET CONTRIBUTION,\u20b9100,28.5%,(Cash in Bank)",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": null
+    },
+    {
+        "content": "Alright, numbers are clearer now\u2014but the **scale** question remains.\n\n**If you grow from 25\u202fk jars a month to 250\u202fk jars a month (10\u00d7 volume), what does your per\u2011unit cost waterfall look like?**  \nSpecifically:\n\n1. How does the **logistics & ops** cost (currently \u20b950 per jar) change with volume?  \n2. Can you keep the **CAC at \u20b980** when you\u2019re no longer buying \u201cfirst\u2011order\u201d ads but need to sustain a national distribution network?  \n3. Does the **royalty stay fixed at \u20b915** per jar, or does it increase as you negotiate with more \u201cDadijis\u201d and possibly higher royalty percentages?\n\nGive me the revised per\u2011unit contribution margin at 10\u00d7 scale. Hawa mein baat mat karo.",
+        "additional_kwargs": {
+            "reasoning_content": "We need to continue as The Fundamentalist, asking tough question. The user gave per-unit waterfall. Need to grill further: ask about scalability, unit economics at larger volume, burn rate, cash runway, valuation, equity split. Also ask about repeat rate verification, churn, distribution channels, IP defensibility. Provide sharp critique. One question at a time. Probably ask about scalability: can they maintain CAC and margins as they scale to 100k SKUs? Ask about how they protect IP. Or ask about cash burn and runway with 50L ask for 2% equity implying 2.5 Cr valuation; is that justified? Let's ask: \"Your CAC is \u20b980 per household, but you are paying \u20b980 per jar? Clarify.\" Also ask about the 42% repeat rate, how measured. Let's ask about unit economics at scale: as you increase volume, does logistics cost per unit drop? Provide one tough question."
+        },
+        "response_metadata": {
+            "token_usage": {
+                "completion_tokens": 373,
+                "prompt_tokens": 2190,
+                "total_tokens": 2563,
+                "completion_time": 0.791440237,
+                "completion_tokens_details": {
+                    "reasoning_tokens": 192
+                },
+                "prompt_time": 0.154852107,
+                "prompt_tokens_details": null,
+                "queue_time": 0.045662422,
+                "total_time": 0.946292344
+            },
+            "model_name": "openai/gpt-oss-120b",
+            "system_fingerprint": "fp_e10890e4b9",
+            "service_tier": "on_demand",
+            "finish_reason": "stop",
+            "logprobs": null,
+            "model_provider": "groq"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019c6704-5e26-70e2-ab2d-e09f18eb3ca5-0",
+        "tool_calls": [],
+        "invalid_tool_calls": [],
+        "usage_metadata": {
+            "input_tokens": 2190,
+            "output_tokens": 373,
+            "total_tokens": 2563,
+            "output_token_details": {
+                "reasoning": 192
+            }
+        }
+    },
+    {
+        "content": "Sharks, when we hit 250k units, the business model shifts from \"Arbitrage\" to \"Efficiency.\" Here is exactly how the numbers move.1. The Logistics Shift: (\u20b950 $\\rightarrow$ \u20b935)Today (25k units): We ship everything from one central warehouse in Delhi. I am paying \"Zone C\" (National) shipping rates (~\u20b960/kg).At 10x Scale: We move to Regional Warehousing (4 Nodes: North, South, East, West).The Math: Instead of shipping a jar from Delhi to Bangalore (\u20b965), I ship a truckload to a Bangalore warehouse, and then do a \"Zone A\" (Local) delivery (\u20b928).Result: My logistics cost per unit drops by 30%.2. The CAC Reality Check: (\u20b980 $\\rightarrow$ \u20b990)The Challenge: You are right. As we saturate the \"Foodie\" niche, acquiring the \"General Mass Market\" customer gets harder. My New Customer CAC will rise to \u20b9120.The Offset: However, at 10x scale, my Brand Recall kicks in. My organic traffic (people searching \"Viraasat\" directly) grows.The Blended Number: My Blended CAC (New + Repeat) settles at \u20b990. I am factoring in a \u20b910 increase to be conservative.3. The Royalty Strategy: (Stays \u20b915)The Leverage: This is non-negotiable. Why? Because at 250k jars, a \"Dadiji\" is earning \u20b93-4 Lakhs a month in royalties.The Logic: In rural India, that is \"CEO-level\" money. If she demands \u20b920, there are 500 other creators waiting in line. The Volume is her reward, not the rate. We hold the leverage, not the creator. Item,Current (25k Jars),Scale (250k Jars),Why?ASP,\u20b9350,\u20b9350,Price consistency builds trust.(-) COGS,\u20b990,\u20b980,Procurement Leverage. Bulk buying glass jars & raw mangoes saves 10-12%.(-) Royalty,\u20b915,\u20b915,Fixed fee contract.(-) Pkg,\u20b915,\u20b912,Economies of scale on printing/labels.= GROSS MARGIN,\u20b9230,\u20b9243,Margin Expansion(-) Logistics,\u20b950,\u20b935,Zone A Delivery (Regional Warehouses).(-) CAC,\u20b980,\u20b990,Market Saturation (Harder to find new users).= NET CONTRIBUTION,\u20b9100 (28%),\u20b9118 (33%),Efficiency wins. Sharks, at 10x scale, my marketing gets slightly more expensive, but my Operations and Procurement get significantly cheaper. My Net Contribution per jar actually increases by 18% (from \u20b9100 to \u20b9118). We become more profitable as we grow, not less.",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": null
+    },
+    {
+        "content": "**INVEST** \u2013 The startup shows compelling early traction, exceptionally strong unit economics (LTV:CAC\u202f\u2248\u202f12:1, net contribution rising from\u202f\u20b9100\u202fto\u202f\u20b9118 per jar at 10\u00d7 scale) and a clear, defensible \u201crecipe\u2011licensing\u201d model that creates a repeatable asset (the creator\u2019s royalty). The financials (\u20b965\u202fL revenue, 18\u202f% net margin, 8\u00d7 ROCE per recipe) support a reasonable \u20b925\u202fcr valuation for a \u20b950\u202fL raise. While scaling logistics, brand acquisition cost and IP protection are risks, the founder has articulated concrete cost\u2011saving levers and a socially\u2011driven moat, making the opportunity worthy of investment.",
+        "additional_kwargs": {
+            "reasoning_content": "We need to decide investment based on the pitch. The user asks: \"Review the conversation. Based on the confidence scores, output 'INVEST' or 'PASS' with a brief reason.\"\n\nWe have to act as a Shark evaluating the startup. Need to consider the data: they have traction, margins, unit economics, scalable model, IP, royalty model, but there are risks: IP protection, competition, scaling logistics, CAC increase, reliance on rural creators, regulatory, brand building, etc. The numbers look good: LTV:CAC 12:1, net contribution per jar 100-118, 8x ROCE per recipe, 25k units sold, 25k units per month? Actually they sold 25,000 units total? They said sold over 25,000 units, revenue \u20b965 Lakhs. That's ~\u20b9260 per unit average. They have 42% repeat. They have profit margins 18% net. They want \u20b950L for 2% equity => valuation \u20b925 crore. At current revenue \u20b965L, that's 3.8x revenue. Reasonable for early stage.\n\nPotential concerns: scaling to 250k units per month (10x) may be optimistic, logistic cost reduction assumptions, brand acquisition cost increase, royalty fixed may become unsustainable if many creators demand higher. Also IP protection is weak; competitors could replicate.\n\nOverall, the pitch is compelling, unit economics strong, clear path to scale, unique IP model, social impact. I'd lean INVEST but with caution.\n\nThus output: INVEST \u2013 strong unit economics, high LTV:CAC, clear scaling levers, early traction.\n\nProvide brief reason."
+        },
+        "response_metadata": {
+            "token_usage": {
+                "completion_tokens": 502,
+                "prompt_tokens": 2551,
+                "total_tokens": 3053,
+                "completion_time": 1.058563449,
+                "completion_tokens_details": {
+                    "reasoning_tokens": 341
+                },
+                "prompt_time": 0.128182578,
+                "prompt_tokens_details": null,
+                "queue_time": 0.046428872,
+                "total_time": 1.186746027
+            },
+            "model_name": "openai/gpt-oss-120b",
+            "system_fingerprint": "fp_a09bde29de",
+            "service_tier": "on_demand",
+            "finish_reason": "stop",
+            "logprobs": null,
+            "model_provider": "groq"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019c6706-89af-7c13-bcdb-cefe669768a5-0",
+        "tool_calls": [],
+        "invalid_tool_calls": [],
+        "usage_metadata": {
+            "input_tokens": 2551,
+            "output_tokens": 502,
+            "total_tokens": 3053,
+            "output_token_details": {
+                "reasoning": 341
+            }
+        }
+    }
+]
