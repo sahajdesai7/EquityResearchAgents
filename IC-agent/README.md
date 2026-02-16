@@ -37,7 +37,7 @@ The system utilizes **LangGraph** to manage state and **Groq** for high-speed LL
 
 ---
 
-## 🧠 Logic Flow Diagram
+## 🧠 Logic Flow
 
 ### 1. Ingestion:
 User enters Opening Pitch.
@@ -59,6 +59,7 @@ Once the loop breaks, the committee outputs a final **INVEST** or **PASS** decis
 **Prerequisites**: Python 3.9+
 
 ### 1. Install Dependencies
+bash 
 ```bash
 pip install -r requirements.txt
 ```
@@ -70,6 +71,7 @@ GROQ_API_KEY=gsk_your_key_here
 GROQ_MODEL_ID=openai/gpt-oss-120b
 ```
 ### 3. Run Pipeline:
+bash 
 ```bash
 python main.py
 ```
